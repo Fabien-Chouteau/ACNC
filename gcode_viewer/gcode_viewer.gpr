@@ -1,0 +1,31 @@
+with "gtkada";
+with "../gcode/gcode.gpr";
+
+project Gcode_Viewer is
+
+   for Source_Dirs use ("src");
+   for Object_Dir use "obj";
+   for Exec_Dir use ".";
+   for Main use ("main_gtkada.adb");
+   type Gtkada_Kind_Type is
+      ("static", "relocatable");
+   Library_Type : Gtkada_Kind_Type := external ("LIBRARY_TYPE");
+
+   package Compiler is
+      for Default_Switches ("ada") use ("-gnatyy", "-gnatwa", "-gnat12");
+   end Compiler;
+
+   package Binder is
+
+      case Library_Type is
+
+         when "static" =>
+            for Default_Switches ("ada") use ("-E");
+
+         when "relocatable" =>
+
+      end case;
+   end Binder;
+
+end Gcode_Viewer;
+
