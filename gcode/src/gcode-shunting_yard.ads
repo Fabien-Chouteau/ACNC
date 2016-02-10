@@ -6,5 +6,5 @@ package Gcode.Shunting_Yard is
                                  Ctx : in out GContext'Class;
                                  Tokens : Token_List;
                                  Cur    : in out Token_Range)
-                                 return Long_Float;
+                                 return Float_Value;
 end Gcode.Shunting_Yard;

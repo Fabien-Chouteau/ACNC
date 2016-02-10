@@ -7,7 +7,7 @@ package Gcode.Lexer is
    type Token is record
       Tstart, Tend : Natural := 0;
       Ttype : Token_Type := Unknown_Token;
-      Value : Long_Float;
+      Value : Float_Value;
    end record;
 
    Max_Tokens : constant := 30;
@@ -24,11 +24,11 @@ package Gcode.Lexer is
    procedure Append (Tokens : in out Token_List;
                      Ttype : Token_Type;
                      Tstart, Tend : Natural;
-                     Value  : Long_Float := 0.0);
+                     Value  : Float_Value := 0.0);
    procedure Append (Tokens : in out Token_List;
                      Ttype : Token_Type;
                      Position : Natural;
-                     Value  : Long_Float := 0.0);
+                     Value  : Float_Value := 0.0);
    procedure Insert (Tokens : in out Token_List; Tok : Token;
                      After : Token_Range);
    procedure push (Tokens : in out Token_List; Tok : Token) renames Append;

@@ -40,7 +40,7 @@ package body Gcode.Parser is
       ----------------
 
       procedure Parse_Word is
-         Value  : Long_Float;
+         Value  : Float_Value;
          Letter : Word_Letter;
       begin
          if Current.Ttype /= Gcode.Lexer.Word then
@@ -86,7 +86,7 @@ package body Gcode.Parser is
 
       procedure Parse_Param_Declaration is
          Id    : Parameter_Id;
-         Value : Long_Float;
+         Value : Float_Value;
       begin
          if Current.Ttype /= Param then
             Raise_Error (Ctx,

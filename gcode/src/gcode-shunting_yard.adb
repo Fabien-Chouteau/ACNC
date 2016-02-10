@@ -5,7 +5,7 @@ with Ada.Numerics.Generic_Elementary_Functions;
 package body Gcode.Shunting_Yard is
 
    package Float_Functions is new
-     Ada.Numerics.Generic_Elementary_Functions (Long_Float);
+     Ada.Numerics.Generic_Elementary_Functions (Float_Value);
 
    type Associative is (Left, Right);
    subtype Operators is Token_Type range Op_Plus .. Op_Power;
@@ -31,9 +31,9 @@ package body Gcode.Shunting_Yard is
 
    function Eval_Stack (Line   : String;
                         Ctx    : in out GContext'Class;
-                        Output : in out Token_List) return Long_Float is
+                        Output : in out Token_List) return Float_Value is
       Tok : constant Token := Pop (Output);
-      R1, R2 : Long_Float;
+      R1, R2 : Float_Value;
    begin
       case Tok.Ttype is
          when Op_Plus =>
@@ -82,7 +82,7 @@ package body Gcode.Shunting_Yard is
                                  Ctx    : in out GContext'Class;
                                  Tokens : Token_List;
                                  Cur    : in out Token_Range)
-                                 return Long_Float
+                                 return Float_Value
    is
       Output, Op_Stack : Token_List;
 
@@ -103,7 +103,7 @@ package body Gcode.Shunting_Yard is
                                   "Named parameters are not supported yet...");
                   when Literal =>
                      declare
-                        Value : constant Long_Float := Next.Value;
+                        Value : constant Float_Value := Next.Value;
                         Id : constant Parameter_Id := Natural (Value);
                         Value_Tok : Token;
                      begin

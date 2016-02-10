@@ -7,7 +7,7 @@ package body Gcode.Execution is
    use type Float_Position;
 
    package Float_Functions is new
-     Ada.Numerics.Generic_Elementary_Functions (Long_Float);
+     Ada.Numerics.Generic_Elementary_Functions (Float_Value);
    use Float_Functions;
 
    type Circular_Interpolation_Direction is (Clockwise, Counter_Clockwise);
@@ -16,9 +16,9 @@ package body Gcode.Execution is
    -- Image --
    -----------
 
-   function Image (Val : Long_Float) return String is
-      Int_Part : constant Integer := Integer (Long_Float'Floor (Val));
-      Frac_Part : constant Integer := Integer (Long_Float'Floor (Val * 10000.0));
+   function Image (Val : Float_Value) return String is
+      Int_Part : constant Integer := Integer (Float_Value'Floor (Val));
+      Frac_Part : constant Integer := Integer (Float_Value'Floor (Val * 10000.0));
    begin
       return Int_Part'Img & "." & Frac_Part'Img;
    end Image;
@@ -48,21 +48,21 @@ package body Gcode.Execution is
 
    function Move_To (Ctx       : in out GContext'Class;
                      Target    : Float_Position;
-                     Feed_Rate : Long_Float) return Boolean
+                     Feed_Rate : Float_Value) return Boolean
    is
       pragma Unreferenced (Feed_Rate);
       D_Step, Cmd : Step_Position;
       D, Absolute : Float_Position;
-      Err1, Err2 : Long_Float;
+      Err1, Err2 : Float_Value;
       Dir_X, Dir_Y, Dir_Z : Direction;
    begin
       Ctx.Log (Info, "Move_To " & Image (Target));
       Cmd := Milli_To_Step (Ctx, Target);
 
       D_Step := Cmd - Ctx.Real_Position;
-      D := (Long_Float (D_Step.X),
-            Long_Float (D_Step.Y),
-            Long_Float (D_Step.Z));
+      D := (Float_Value (D_Step.X),
+            Float_Value (D_Step.Y),
+            Float_Value (D_Step.Z));
       Absolute := abs D;
 
       Ctx.Put_Line ("Move_To steps" & Image (D_Step));
@@ -165,7 +165,7 @@ package body Gcode.Execution is
    ---------------
 
    function Move_Line (Ctx : in out GContext'Class;
-                       Feed_Rate : Long_Float) return Boolean is
+                       Feed_Rate : Float_Value) return Boolean is
       Target : Float_Position := Step_To_Milli (Ctx, Ctx.Real_Position);
    begin
       if Ctx.B ('X').Is_Set then
@@ -185,17 +185,17 @@ package body Gcode.Execution is
    -- Distance --
    --------------
 
-   function Distance (A, B : Float_Position) return Long_Float is
-      Tmp : constant Long_Float :=
+   function Distance (A, B : Float_Position) return Float_Value is
+      Tmp : constant Float_Value :=
         (A.X - B.X)**2 + (A.Y - B.Y)**2 + (A.Z - B.Z)**2;
 
       ----------
       -- Sqrt --
       ----------
 
-      function Sqrt (X : Long_Float) return Long_Float is
-         U     : Long_Float := X;
-         New_U : Long_Float;
+      function Sqrt (X : Float_Value) return Float_Value is
+         U     : Float_Value := X;
+         New_U : Float_Value;
       begin
          if X < 0.0 then
             raise Program_Error;
@@ -222,10 +222,10 @@ package body Gcode.Execution is
 
    function Move_Circle (Ctx : in out GContext'Class;
                          Dir : Circular_Interpolation_Direction;
-                         Feed_Rate : Long_Float) return Boolean is
+                         Feed_Rate : Float_Value) return Boolean is
       Start_Point, End_Point, Center, Target : Float_Position;
-      Radius, Radius2 : Long_Float;
-      Travel, Angle, Cos_A, Sin_A : Long_Float;
+      Radius, Radius2 : Float_Value;
+      Travel, Angle, Cos_A, Sin_A : Float_Value;
       Divisions : Natural;
    begin
       --  Ctx.Log (Info, "Move_Circle");
@@ -322,7 +322,7 @@ package body Gcode.Execution is
 
       Ctx.Put_Line ("Division:" & Divisions'Img);
 
-      Angle := Travel / Long_Float (Divisions);
+      Angle := Travel / Float_Value (Divisions);
       Cos_A := Cos (Angle);
       Sin_A := Sin (Angle);
       Target := Start_Point;
@@ -347,7 +347,7 @@ package body Gcode.Execution is
 
 --     function Move_Circle_2 (Ctx : in out GContext;
 --                             Dir : Circular_Interpolation_Direction;
---                             Feed_Rate : Long_Float) return Boolean is
+--                             Feed_Rate : Float_Value) return Boolean is
 --        End_Point_F, Center_F : Float_Position;
 --        End_Point, Center : Step_Position;
 --        --  Dir_X, Dir_Y, Dir_Z : Direction;
@@ -469,7 +469,7 @@ package body Gcode.Execution is
    --------------------
 
    function Return_To_Home (Ctx : in out GContext'Class;
-                            Feed_Rate : Long_Float) return Boolean is
+                            Feed_Rate : Float_Value) return Boolean is
       X_At_Home, Y_At_Home, Z_At_Home : Boolean := False;
       X_Cnt, Y_Cnt, Z_Cnt : Natural := 0;
    begin
@@ -516,9 +516,9 @@ package body Gcode.Execution is
 --        end loop;
 
       --  Set known home position
-      Ctx.Step_Per_Millimeter.X := Long_Float (X_Cnt) / 38.5;
-      Ctx.Step_Per_Millimeter.Y := Long_Float (Y_Cnt) / 37.0;
-      Ctx.Step_Per_Millimeter.Z := Long_Float (Z_Cnt) / 15.0;
+      Ctx.Step_Per_Millimeter.X := Float_Value (X_Cnt) / 38.5;
+      Ctx.Step_Per_Millimeter.Y := Float_Value (Y_Cnt) / 37.0;
+      Ctx.Step_Per_Millimeter.Z := Float_Value (Z_Cnt) / 15.0;
       Ctx.Real_Position := (0, 0, Z_Cnt);
       return True;
    end Return_To_Home;
@@ -532,11 +532,11 @@ package body Gcode.Execution is
    is
       Int_Part, Frac_Part : Integer;
       pragma Unreferenced (Frac_Part);
-      Feed : Long_Float;
+      Feed : Float_Value;
    begin
       if Ctx.B ('M').Is_Set then
-         Int_Part := Integer (Long_Float'Floor (Ctx.B ('M').Value));
-         Frac_Part := Integer (Long_Float'Floor (Ctx.B ('M').Value * 100.0));
+         Int_Part := Integer (Float_Value'Floor (Ctx.B ('M').Value));
+         Frac_Part := Integer (Float_Value'Floor (Ctx.B ('M').Value * 100.0));
          case Int_Part is
             when others =>
                Ctx.Report_Error (Line, "Unknown M code " & Int_Part'Img, 0, 0);
@@ -559,8 +559,8 @@ package body Gcode.Execution is
       end if;
 
       if Ctx.B ('G').Is_Set then
-         Int_Part := Integer (Long_Float'Floor (Ctx.B ('G').Value));
-         Frac_Part := Integer (Long_Float'Floor (Ctx.B ('G').Value * 100.0));
+         Int_Part := Integer (Float_Value'Floor (Ctx.B ('G').Value));
+         Frac_Part := Integer (Float_Value'Floor (Ctx.B ('G').Value * 100.0));
          case Int_Part is
             when 0 =>
                return Move_Line (Ctx, Ctx.Fast_Feed_Rate);

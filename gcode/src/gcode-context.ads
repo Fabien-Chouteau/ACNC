@@ -1,35 +1,14 @@
 with Ada.Unchecked_Conversion;
 with Gcode.Parameters; use Gcode.Parameters;
-with Coords;
 
 package Gcode.Context is
-
-   type Word is record
-      Value  : Long_Float;
-      Is_Set : Boolean;
-   end record;
-
-   subtype Word_Letter is Character range 'A' .. 'Z';
-   type Block is array (Word_Letter) of Word;
-
-   type Coord_Unit is (Inches, Millimeters, Step);
-
-   package Float_Coords is new Coords (Long_Float, 0.0);
-   subtype Float_Position is Float_Coords.Position;
-
-   subtype Steps is Integer;
-   package Steps_Coords is new Coords (Steps, 0);
-   subtype Step_Position is Steps_Coords.Position;
-
-   type Direction is (Forward, Backward);
-   type Axis_Name is (X_Axis, Y_Axis, Z_Axis);
 
    type GContext is tagged record
       Params : Parameters_Set;
       Unit : Coord_Unit := Millimeters;
       B : Block;
-      Fast_Feed_Rate   : Long_Float := 2.0;
-      Current_Feed_Rate : Long_Float := 1.0;
+      Fast_Feed_Rate   : Float_Value := 2.0;
+      Current_Feed_Rate : Float_Value := 1.0;
       Error_Flag : Boolean := False;
       Step_Per_Millimeter : Float_Position := (100.0, 100.0, 100.0);
       Real_Position : Step_Position;
@@ -48,7 +27,7 @@ package Gcode.Context is
    function Milli_To_Step (Ctx : in out GContext; S : Float_Position)
                            return Step_Position;
    function Inch_To_Milli (S : Float_Position) return Float_Position;
-   function Inch_To_Milli (S : Long_Float) return Long_Float;
+   function Inch_To_Milli (S : Float_Value) return Float_Value;
 
    procedure Raise_Error (Ctx : in out GContext; Msg : String);
    procedure Clear_Error (Ctx : in out GContext);

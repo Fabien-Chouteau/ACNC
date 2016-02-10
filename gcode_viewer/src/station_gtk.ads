@@ -4,6 +4,7 @@ with Glib.Main; use Glib.Main;
 with Gtk.Button; use Gtk.Button;
 with Gtkada.Builder; use Gtkada.Builder;
 with Gcode.Context; use Gcode.Context;
+with Gcode; use Gcode;
 
 package Station_Gtk is
 

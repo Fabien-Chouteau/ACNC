@@ -24,7 +24,7 @@ package body Gcode.Lexer is
    procedure Append (Tokens : in out Token_List;
                      Ttype : Token_Type;
                      Tstart, Tend : Natural;
-                     Value  : Long_Float := 0.0)
+                     Value  : Float_Value := 0.0)
    is
    begin
       Append (Tokens, (Tstart, Tend, Ttype, Value));
@@ -37,7 +37,7 @@ package body Gcode.Lexer is
    procedure Append (Tokens : in out Token_List;
                      Ttype : Token_Type;
                      Position : Natural;
-                     Value  : Long_Float := 0.0)
+                     Value  : Float_Value := 0.0)
    is
    begin
       Append (Tokens, Ttype, Position, Position, Value);
@@ -203,17 +203,17 @@ package body Gcode.Lexer is
    -- Eval_Number --
    -----------------
 
-   function Eval_Number (Line : String; Tok : Token) return Long_Float is
+   function Eval_Number (Line : String; Tok : Token) return Float_Value is
 
       -------------------
       -- Char_To_Float --
       -------------------
 
-      function Char_To_Float (C : Character) return Long_Float is
+      function Char_To_Float (C : Character) return Float_Value is
       begin
-         return Long_Float (Character'Pos (C) - Character'Pos ('0'));
+         return Float_Value (Character'Pos (C) - Character'Pos ('0'));
       end;
-      Ret : Long_Float := 0.0;
+      Ret : Float_Value := 0.0;
       Cnt : Natural := 0;
       Floating : Boolean := False;
    begin
@@ -233,7 +233,7 @@ package body Gcode.Lexer is
                Floating := True;
             when '0' .. '9' =>
                declare
-                  Tmp : Long_Float := 1.0;
+                  Tmp : Float_Value := 1.0;
                begin
                   for Index in 1 .. Cnt loop
                         Tmp := Tmp * 10.0;

@@ -11,9 +11,9 @@ package body Gcode.Context is
                            return Float_Position
    is
    begin
-      return (Long_Float (S.X) / Ctx.Step_Per_Millimeter.X,
-              Long_Float (S.Y) / Ctx.Step_Per_Millimeter.Y,
-              Long_Float (S.Z) / Ctx.Step_Per_Millimeter.Z);
+      return (Float_Value (S.X) / Ctx.Step_Per_Millimeter.X,
+              Float_Value (S.Y) / Ctx.Step_Per_Millimeter.Y,
+              Float_Value (S.Z) / Ctx.Step_Per_Millimeter.Z);
    end;
 
    -------------------
@@ -42,7 +42,7 @@ package body Gcode.Context is
    -- Inch_To_Milli --
    -------------------
 
-   function Inch_To_Milli (S : Long_Float) return Long_Float is
+   function Inch_To_Milli (S : Float_Value) return Float_Value is
    begin
       return S * 25.4;
    end;
