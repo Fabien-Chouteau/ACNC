@@ -3,6 +3,10 @@ G21 (All units in mm)
 (Start cutting path id: path5042)
 (Change tool to Default tool)
 
+#<test> = 20
+#<test> = #<test> + 2
+#<test2> = [#<test> + 2**#<test>]
+
 G00 Z5.000000
 G00 X29.369169 Y10.778317
 

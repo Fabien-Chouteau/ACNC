@@ -5,26 +5,42 @@ package Gcode.Parameters is
    type Parameters_Set is private;
    subtype Parameter_Id is Natural;
 
+   type String_Access is access all String;
+
    type Parameter is record
       Ptype : Param_Type := Undefined;
       Id    : Parameter_Id;
-      Value : Long_Float := 0.0;
+      Name  : String_Access;
+      Value : Float_Value := 0.0;
    end record;
 
-   Undefined_Param : constant Parameter := (Undefined, 0, 0.0);
+   Undefined_Param : constant Parameter := (Undefined, 0, null, 0.0);
 
    procedure Define (Ctx   : in out Parameters_Set;
                      Id    : Parameter_Id;
-                     Value : Long_Float);
-   function Defined (Ctx : Parameters_Set; Id : Parameter_Id) return Boolean;
-   function Get_Value (Ctx : Parameters_Set; Id : Parameter_Id) return Long_Float;
+                     Value : Float_Value);
+   procedure Define (Ctx   : in out Parameters_Set;
+                     Name  : String;
+                     Value : Float_Value);
+   function Defined (Ctx : Parameters_Set;
+                     Id  : Parameter_Id) return Boolean;
+   function Defined (Ctx  : Parameters_Set;
+                     Name : String) return Boolean;
+   function Get_Value (Ctx : Parameters_Set;
+                       Id  : Parameter_Id) return Float_Value;
+   function Get_Value (Ctx  : Parameters_Set;
+                       Name : String) return Float_Value;
+
+   procedure Clear (Ctx : in out Parameters_Set);
+
+   procedure Print (Ctx : Parameters_Set);
 private
 
    subtype Parameter_Range is Natural range 1 .. Max_Parameter;
    type Parameter_Array is array (Parameter_Range) of Parameter;
 
    type Parameters_Set is record
-      Params : Parameter_Array;
+      Params : Parameter_Array := (others => Undefined_Param);
       Last   : Natural := Parameter_Range'First;
    end record;
 end Gcode.Parameters;

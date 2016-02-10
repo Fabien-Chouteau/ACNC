@@ -99,8 +99,24 @@ package body Gcode.Shunting_Yard is
             when Param =>
                case Next.Ttype is
                   when Param_Name =>
-                     Raise_Error (Ctx,
-                                  "Named parameters are not supported yet...");
+                     declare
+                        Name : constant String :=
+                          Line (Next.Tstart + 1 .. Next.Tend - 1);
+                        Value_Tok : Token;
+                     begin
+                        Value_Tok.Tstart := Current.Tstart;
+                        Value_Tok.Tend := Next.Tend;
+                        Cur := Cur + 1;
+                        if not Defined (Ctx.Params, Name) then
+                           Raise_Error (Ctx,
+                                        "Undefined named parameter: " & Name);
+                        else
+                           Value_Tok.Tend  := Cur - 1;
+                           Value_Tok.Ttype := Literal;
+                           Value_Tok.Value := Get_Value (Ctx.Params, Name);
+                           Push (Output, Value_Tok);
+                        end if;
+                     end;
                   when Literal =>
                      declare
                         Value : constant Float_Value := Next.Value;

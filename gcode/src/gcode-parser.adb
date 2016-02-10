@@ -85,8 +85,8 @@ package body Gcode.Parser is
       -----------------------------
 
       procedure Parse_Param_Declaration is
-         Id    : Parameter_Id;
-         Value : Float_Value;
+         Param_Token : Token;
+         Value       : Float_Value;
       begin
          if Current.Ttype /= Param then
             Raise_Error (Ctx,
@@ -96,11 +96,8 @@ package body Gcode.Parser is
          end if;
          Increment;
          case Current.Ttype is
-            when Param_Name =>
-               --  Named Parameters not supported
-               raise Program_Error;
-            when Literal =>
-               Id := Parameter_Id (Current.Value);
+            when Param_Name | Literal  =>
+               Param_Token := Current;
             when others =>
                Raise_Error (Ctx,
                             "Parameter Id expected at " & Current.Tstart'Img &
@@ -121,7 +118,15 @@ package body Gcode.Parser is
          Value := Evaluate_Expression (Line, Ctx, Tokens, Cur);
 
          if not Error_Raised (Ctx) then
-            Define (Ctx.Params, Id, Value);
+            case Param_Token.Ttype is
+               when Param_Name => null;
+                  Define (Ctx.Params,
+                          Line (Param_Token.Tstart + 1 .. Param_Token.Tend - 1),
+                          Value);
+               when Literal =>
+                  Define (Ctx.Params, Parameter_Id (Param_Token.Value), Value);
+               when others => null;
+            end case;
          end if;
       end Parse_Param_Declaration;
 
