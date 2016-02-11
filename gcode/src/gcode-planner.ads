@@ -8,4 +8,14 @@ package Gcode.Planner is
      (Ctx       : in out GContext'Class;
       Target    : Float_Position;
       Feed_Rate : Float_Value);
+
+   procedure Planner_Add_Dwell
+     (Ctx       : in out GContext'Class;
+      Duration  : Float_Value);
+
+   procedure Planner_Add_Homing
+     (Ctx       : in out GContext'Class;
+      Target    : Float_Position;
+      Feed_Rate : Float_Value);
+
 end Gcode.Planner;

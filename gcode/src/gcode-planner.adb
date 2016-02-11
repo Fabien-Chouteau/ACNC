@@ -136,4 +136,29 @@ package body Gcode.Planner is
       return;
    end Planner_Add_Motion;
 
+   -----------------------
+   -- Planner_Add_Dwell --
+   -----------------------
+
+   procedure Planner_Add_Dwell
+     (Ctx       : in out GContext'Class;
+      Duration  : Float_Value)
+   is
+   begin
+      raise Program_Error;
+   end Planner_Add_Dwell;
+
+   ------------------------
+   -- Planner_Add_Homing --
+   ------------------------
+
+   procedure Planner_Add_Homing
+     (Ctx       : in out GContext'Class;
+      Target    : Float_Position;
+      Feed_Rate : Float_Value)
+   is
+   begin
+      raise Program_Error;
+   end Planner_Add_Homing;
+
 end Gcode.Planner;
