@@ -24,4 +24,9 @@ package Gcode is
 
    type Direction is (Forward, Backward);
    type Axis_Name is (X_Axis, Y_Axis, Z_Axis);
+
+   function Distance (A, B : Float_Position) return Float_Value;
+   function Image (Val : Float_Value) return String;
+   function Image (Pos : Float_Position) return String;
+   function Image (Pos : Step_Position) return String;
 end Gcode;
