@@ -7,7 +7,7 @@ package Gcode.Motion is
    procedure Move_Line
      (Ctx       : in out GContext'Class;
       Target    : Float_Position;
-      Feed_Rate : Float_Value);
+      Feed_Rate : Step_Speed);
 
    procedure Move_Circle
      (Ctx         : in out GContext'Class;
@@ -15,5 +15,5 @@ package Gcode.Motion is
       End_Point   : Float_Position;
       Offset      : Float_Position;
       Dir         : Circular_Interpolation_Direction;
-      Feed_Rate   : Float_Value);
+      Feed_Rate   : Step_Speed);
 end Gcode.Motion;

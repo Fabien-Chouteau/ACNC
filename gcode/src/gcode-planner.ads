@@ -7,7 +7,7 @@ package Gcode.Planner is
    procedure Planner_Add_Motion
      (Ctx       : in out GContext'Class;
       Target    : Float_Position;
-      Feed_Rate : Float_Value);
+      Feed_Rate : Step_Speed);
 
    procedure Planner_Add_Dwell
      (Ctx       : in out GContext'Class;
@@ -16,6 +16,6 @@ package Gcode.Planner is
    procedure Planner_Add_Homing
      (Ctx       : in out GContext'Class;
       Target    : Float_Position;
-      Feed_Rate : Float_Value);
+      Feed_Rate : Step_Speed);
 
 end Gcode.Planner;

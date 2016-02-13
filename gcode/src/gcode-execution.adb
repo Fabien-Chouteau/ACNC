@@ -10,18 +10,18 @@ package body Gcode.Execution is
    ------------------
 
    procedure Line_Command (Ctx : in out GContext'Class;
-                           Feed_Rate : Float_Value)
+                           Feed_Rate : Step_Speed)
    is
       Target : Float_Position := Step_To_Milli (Ctx, Ctx.Real_Position);
    begin
       if Ctx.B ('X').Is_Set then
-         Target.X := Ctx.B ('X').Value;
+         Target (X_Axis) := Ctx.B ('X').Value;
       end if;
       if Ctx.B ('Y').Is_Set then
-         Target.Y := Ctx.B ('Y').Value;
+         Target (Y_Axis) := Ctx.B ('Y').Value;
       end if;
       if Ctx.B ('Z').Is_Set then
-         Target.Z := Ctx.B ('Z').Value;
+         Target (Z_Axis) := Ctx.B ('Z').Value;
       end if;
 
       Gcode.Motion.Move_Line (Ctx, Target, Feed_Rate);
@@ -34,7 +34,7 @@ package body Gcode.Execution is
    procedure Circle_Command
      (Ctx : in out GContext'Class;
       Dir : Gcode.Motion.Circular_Interpolation_Direction;
-      Feed_Rate : Float_Value)
+      Feed_Rate : Step_Speed)
    is
       Start_Point, End_Point, Center : Float_Position;
    begin
@@ -61,24 +61,24 @@ package body Gcode.Execution is
       End_Point   := Start_Point;
 
       if Ctx.B ('X').Is_Set then
-         End_Point.X := Ctx.B ('X').Value;
+         End_Point (X_Axis) := Ctx.B ('X').Value;
       end if;
       if Ctx.B ('Y').Is_Set then
-         End_Point.Y := Ctx.B ('Y').Value;
+         End_Point (Y_Axis) := Ctx.B ('Y').Value;
       end if;
       if Ctx.B ('Z').Is_Set then
-         End_Point.Z := Ctx.B ('Z').Value;
+         End_Point (Z_Axis) := Ctx.B ('Z').Value;
       end if;
 
-      if Start_Point.Z /= End_Point.Z then
+      if Start_Point (Z_Axis) /= End_Point (Z_Axis) then
          Ctx.Log (Warning, "Z movement not supported in circular motion");
       end if;
 
       if Ctx.B ('I').Is_Set then
-         Center.X := Start_Point.X + Ctx.B ('I').Value;
+         Center (X_Axis) := Start_Point (X_Axis) + Ctx.B ('I').Value;
       end if;
       if Ctx.B ('J').Is_Set then
-         Center.Y := Start_Point.Y + Ctx.B ('J').Value;
+         Center (Y_Axis) := Start_Point (Y_Axis) + Ctx.B ('J').Value;
       end if;
 
       Gcode.Motion.Move_Circle (Ctx         => Ctx,
@@ -94,7 +94,7 @@ package body Gcode.Execution is
    --------------------
 
    function Return_To_Home (Ctx : in out GContext'Class;
-                            Feed_Rate : Float_Value) return Boolean is
+                            Feed_Rate : Step_Speed) return Boolean is
       X_At_Home, Y_At_Home, Z_At_Home : Boolean := False;
       X_Cnt, Y_Cnt, Z_Cnt : Natural := 0;
    begin
@@ -139,9 +139,9 @@ package body Gcode.Execution is
 --        end loop;
 
       --  Set known home position
-      Ctx.Step_Per_Millimeter.X := Float_Value (X_Cnt) / 38.5;
-      Ctx.Step_Per_Millimeter.Y := Float_Value (Y_Cnt) / 37.0;
-      Ctx.Step_Per_Millimeter.Z := Float_Value (Z_Cnt) / 15.0;
+      Ctx.Step_Per_Millimeter (X_Axis) := Float_Value (X_Cnt) / 38.5;
+      Ctx.Step_Per_Millimeter (Y_Axis) := Float_Value (Y_Cnt) / 37.0;
+      Ctx.Step_Per_Millimeter (Z_Axis) := Float_Value (Z_Cnt) / 15.0;
       Ctx.Real_Position := (0, 0, Z_Cnt);
       return True;
    end Return_To_Home;
@@ -155,7 +155,7 @@ package body Gcode.Execution is
    is
       Int_Part, Frac_Part : Integer;
       pragma Unreferenced (Frac_Part);
-      Feed : Float_Value;
+      Feed : Step_Speed;
    begin
       if Ctx.B ('M').Is_Set then
          Int_Part := Integer (Float_Value'Floor (Ctx.B ('M').Value));
@@ -168,7 +168,7 @@ package body Gcode.Execution is
       end if;
 
       if Ctx.B ('F').Is_Set then
-         Ctx.Current_Feed_Rate := Ctx.B ('F').Value;
+         Ctx.Current_Feed_Rate := Step_Speed (Ctx.B ('F').Value);
       end if;
 
       Feed := Ctx.Current_Feed_Rate;

@@ -7,8 +7,8 @@ package Gcode.Context is
       Params : Parameters_Set;
       Unit : Coord_Unit := Millimeters;
       B : Block;
-      Fast_Feed_Rate   : Float_Value := 2.0;
-      Current_Feed_Rate : Float_Value := 1.0;
+      Fast_Feed_Rate   : Step_Speed := 2.0;
+      Current_Feed_Rate : Step_Speed := 1.0;
       Error_Flag : Boolean := False;
       Step_Per_Millimeter : Float_Position := (100.0, 100.0, 100.0);
       Real_Position : Step_Position;

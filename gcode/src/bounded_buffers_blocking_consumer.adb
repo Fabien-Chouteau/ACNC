@@ -28,7 +28,7 @@
 --                                                                          --
 ------------------------------------------------------------------------------
 
-package body Bounded_Buffers is
+package body Bounded_Buffers_Blocking_Consumer is
 
    --------------------
    -- Bounded_Buffer --
@@ -40,22 +40,24 @@ package body Bounded_Buffers is
       -- Insert --
       ------------
 
-      entry Insert (Item : Element) when Count /= Capacity is
+      procedure Insert (Item : Element) is
       begin
          Values (Next_In) := Item;
          Next_In := (Next_In mod Capacity) + 1;
          Count := Count + 1;
+         Not_Empty := True;
       end Insert;
 
       ------------
       -- Remove --
       ------------
 
-      procedure Remove (Item : out Element) is
+      entry Remove (Item : out Element) when Not_Empty is
       begin
          Item := Values (Next_Out);
          Next_Out := (Next_Out mod Capacity) + 1;
          Count := Count - 1;
+         Not_Empty := Count = 0;
       end Remove;
 
       -----------
@@ -87,4 +89,4 @@ package body Bounded_Buffers is
 
    end Bounded_Buffer;
 
-end Bounded_Buffers;
+end Bounded_Buffers_Blocking_Consumer;

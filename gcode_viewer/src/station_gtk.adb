@@ -66,30 +66,24 @@ package body Station_Gtk is
    procedure Step (Ctx : in out GTK_CNC; Axis : Axis_Name; Dir : Direction) is
       S : constant Steps := (if Dir = Forward then 1 else -1);
    begin
-      case Axis is
-         when X_Axis =>
-            Ctx.Real_Position.X := Ctx.Real_Position.X + S;
-            History.Append (Ctx.Real_Position);
-         when Y_Axis =>
-            Ctx.Real_Position.Y := Ctx.Real_Position.Y + S;
-            History.Append (Ctx.Real_Position);
-         when Z_Axis =>
-            Ctx.Real_Position.Z := Ctx.Real_Position.Z + S;
-            --  Z moves don't show up in the interface so we don't have to
-            --  record them.
-            --  History.Append (Ctx.Real_Position);
-      end case;
+      Ctx.Real_Position (Axis) := Ctx.Real_Position (Axis) + S;
+
+      --  Z moves don't show up in the interface so we don't have to
+      --  record them.
+      if Axis /= Z_Axis then
+         History.Append (Ctx.Real_Position);
+      end if;
    end Step;
 
    overriding
    function Home (Ctx : in out GTK_CNC; Axis : Axis_Name) return Boolean is
    begin
       case Axis is
-         when X_Axis => return Ctx.Real_Position.X <= 0;
-         when Y_Axis => return Ctx.Real_Position.Y <= 0;
+         when X_Axis => return Ctx.Real_Position (X_Axis) <= 0;
+         when Y_Axis => return Ctx.Real_Position (Y_Axis) <= 0;
          when Z_Axis =>
-            return Ctx.Real_Position.Z >=
-              Steps (Ctx.Step_Per_Millimeter.Z * 2.0);
+            return Ctx.Real_Position (Z_Axis) >=
+              Steps (Ctx.Step_Per_Millimeter (Z_Axis) * 2.0);
       end case;
    end Home;
 
@@ -178,14 +172,14 @@ package body Station_Gtk is
       Cairo.Fill (Cr);
 
       for Pos of History loop
-         if Pos.Z > 0 then
+         if Pos (Z_Axis) > 0 then
             Set_Source_Rgb (Cr, 0.0, 1.0, 0.0);
          else
             Set_Source_Rgb (Cr, 1.0, 0.0, 0.0);
          end if;
          Rectangle (Cr     => Cr,
-                    X      => Gdouble (Pos.X) - 1.0 * (1.0 / Zoom),
-                    Y      => Gdouble (Pos.Y) - 1.0 * (1.0 / Zoom),
+                    X      => Gdouble (Pos (X_Axis)) - 1.0 * (1.0 / Zoom),
+                    Y      => Gdouble (Pos (Y_Axis)) - 1.0 * (1.0 / Zoom),
                     Width  => 2.0 * (1.0 / Zoom),
                     Height => 2.0 * (1.0 / Zoom));
          Cairo.Fill (Cr);

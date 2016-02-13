@@ -5,8 +5,7 @@ package body Gcode is
    --------------
 
    function Distance (A, B : Float_Position) return Float_Value is
-      Tmp : constant Float_Value :=
-        (A.X - B.X)**2 + (A.Y - B.Y)**2 + (A.Z - B.Z)**2;
+      Tmp : Float_Value := 0.0;
 
       ----------
       -- Sqrt --
@@ -28,7 +27,11 @@ package body Gcode is
             U := New_U;
          end loop;
          return U;
-      end Sqrt;   begin
+      end Sqrt;
+   begin
+      for Axis in Axis_Name loop
+         Tmp := Tmp + (A (Axis) - B (Axis))**2;
+      end loop;
       return Sqrt (Tmp);
    exception
       when others =>
@@ -52,8 +55,8 @@ package body Gcode is
 
    function Image (Pos : Float_Position) return String is
    begin
-      return ("X:" & Image (Pos.X) & " Y:" & Image (Pos.Y)
-              & " Z:" & Image (Pos.Z));
+      return ("X:" & Image (Pos (X_Axis)) & " Y:" & Image (Pos (Y_Axis))
+              & " Z:" & Image (Pos (Z_Axis)));
    end Image;
 
    -----------
@@ -62,7 +65,8 @@ package body Gcode is
 
    function Image (Pos : Step_Position) return String is
    begin
-      return ("X:" & Pos.X'Img & " Y:" & Pos.Y'Img & " Z:" & Pos.Z'Img);
+      return ("X:" & Pos (X_Axis)'Img & " Y:" & Pos (Y_Axis)'Img & " Z:" &
+                Pos (Z_Axis)'Img);
    end Image;
 
 end Gcode;

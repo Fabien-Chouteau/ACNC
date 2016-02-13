@@ -10,10 +10,12 @@ package body Gcode.Context is
    function Step_To_Milli (Ctx : in out GContext; S : Step_Position)
                            return Float_Position
    is
+      Ret : Float_Position;
    begin
-      return (Float_Value (S.X) / Ctx.Step_Per_Millimeter.X,
-              Float_Value (S.Y) / Ctx.Step_Per_Millimeter.Y,
-              Float_Value (S.Z) / Ctx.Step_Per_Millimeter.Z);
+      for Axis in Axis_Name loop
+         Ret (Axis) := Float_Value (S (Axis)) / Ctx.Step_Per_Millimeter (Axis);
+      end loop;
+      return Ret;
    end;
 
    -------------------
@@ -23,10 +25,12 @@ package body Gcode.Context is
    function Milli_To_Step (Ctx : in out GContext; S : Float_Position)
                            return Step_Position
    is
+      Ret : Step_Position;
    begin
-      return (Steps (S.X * Ctx.Step_Per_Millimeter.X),
-              Steps (S.Y * Ctx.Step_Per_Millimeter.Y),
-              Steps (S.Z * Ctx.Step_Per_Millimeter.Z));
+      for Axis in Axis_Name loop
+         Ret (Axis) := Steps (S (Axis) * Ctx.Step_Per_Millimeter (Axis));
+      end loop;
+      return Ret;
    end;
 
    -------------------
@@ -34,8 +38,12 @@ package body Gcode.Context is
    -------------------
 
    function Inch_To_Milli (S : Float_Position) return Float_Position is
+      Ret : Float_Position;
    begin
-      return (S.X * 25.4, S.Y * 25.4, S.Z * 25.4);
+      for Axis in Axis_Name loop
+         Ret (Axis) := Inch_To_Milli (S (Axis));
+      end loop;
+      return Ret;
    end;
 
    -------------------
@@ -93,17 +101,7 @@ package body Gcode.Context is
    procedure Step (Ctx : in out GContext; Axis : Axis_Name; Dir : Direction) is
       S : constant Steps := (if Dir = Forward then 1 else -1);
    begin
-      case Axis is
-         when X_Axis =>
-            --  Put_Line ("Step X " & Dir'Img);
-            Ctx.Real_Position.X := Ctx.Real_Position.X + S;
-         when Y_Axis =>
-            --  Put_Line ("Step Y " & Dir'Img);
-            Ctx.Real_Position.Y := Ctx.Real_Position.Y + S;
-         when Z_Axis =>
-            --  Put_Line ("Step Z " & Dir'Img);
-            Ctx.Real_Position.Z := Ctx.Real_Position.Z + S;
-      end case;
+      Ctx.Real_Position (Axis) := Ctx.Real_Position (Axis) + S;
    end Step;
 
    ------------------

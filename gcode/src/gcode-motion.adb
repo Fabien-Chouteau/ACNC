@@ -1,4 +1,3 @@
-with Ada.Numerics.Generic_Elementary_Functions;
 with Ada.Numerics; use Ada.Numerics;
 
 with Gcode.Planner;
@@ -8,10 +7,6 @@ package body Gcode.Motion is
    use type Step_Position;
    use type Float_Position;
 
-   package Float_Functions is new
-     Ada.Numerics.Generic_Elementary_Functions (Float_Value);
-   use Float_Functions;
-
    ---------------
    -- Move_Line --
    ---------------
@@ -19,7 +14,7 @@ package body Gcode.Motion is
    procedure Move_Line
      (Ctx       : in out GContext'Class;
       Target    : Float_Position;
-      Feed_Rate : Float_Value)
+      Feed_Rate : Step_Speed)
    is
    begin
       Gcode.Planner.Planner_Add_Motion (Ctx, Target, Feed_Rate);
@@ -35,7 +30,7 @@ package body Gcode.Motion is
       End_Point   : Float_Position;
       Offset      : Float_Position;
       Dir         : Circular_Interpolation_Direction;
-      Feed_Rate   : Float_Value)
+      Feed_Rate   : Step_Speed)
    is
       Target : Float_Position;
       Radius, Radius2 : Float_Value;
@@ -51,8 +46,11 @@ package body Gcode.Motion is
       Radius2 := Distance (Offset, Start_Point);
       Ctx.Put_Line ("Radius2: " & Image (Radius2));
 
-      Travel := Arctan (End_Point.X - Offset.X, End_Point.Y - Offset.Y)
-        - Arctan (Start_Point.X - Offset.X, Start_Point.Y - Offset.Y);
+      Travel := Arctan (End_Point (X_Axis) - Offset (X_Axis),
+                        End_Point (Y_Axis) - Offset (Y_Axis))
+        - Arctan (Start_Point (X_Axis) - Offset (X_Axis),
+                  Start_Point (Y_Axis) - Offset (Y_Axis));
+
       if Dir = Clockwise then
          if Travel >= 0.0 then
             Travel := Travel - 1.0 * Pi;
@@ -66,8 +64,8 @@ package body Gcode.Motion is
          From : constant Float_Position := Start_Point - Offset;
          To   : constant Float_Position := End_Point - Offset;
       begin
-         Travel := Arctan (From.X * To.Y - From.Y * To.X,
-                           From.X * To.X + From.Y * To.Y);
+         Travel := Arctan (From (X_Axis) * To (Y_Axis) - From (Y_Axis) * To (X_Axis),
+                           From (X_Axis) * To (X_Axis) + From (Y_Axis) * To (Y_Axis));
          if Travel < 0.0 then
             Travel := Travel + 2.0 * Pi;
          end if;
@@ -100,9 +98,9 @@ package body Gcode.Motion is
             Rot : Float_Position;
          begin
             --  Rotate direction vector
-            Rot.X := Vect.X * Cos_A - Vect.Y * Sin_A;
-            Rot.Y := Vect.X * Sin_A + Vect.Y * Cos_A;
-            Rot.Z := 0.0;
+            Rot (X_Axis) := Vect (X_Axis) * Cos_A - Vect (Y_Axis) * Sin_A;
+            Rot (Y_Axis) := Vect (X_Axis) * Sin_A + Vect (Y_Axis) * Cos_A;
+            Rot (Z_Axis) := 0.0;
 
             Target := Offset + Rot;
             Move_Line (Ctx, Target, Feed_Rate);

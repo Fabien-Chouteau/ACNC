@@ -43,7 +43,7 @@ generic
    type Element is private;
    --  The type of the values contained within buffer objects
 
-package Bounded_Buffers is
+package Bounded_Buffers_Blocking_Producer is
    pragma Pure;
 
    type Content is array (Positive range <>) of Element;
@@ -95,6 +95,9 @@ package Bounded_Buffers is
 
       Count    : Natural  := 0;
       --  The number of Elements currently held
+
+      Not_Full : Boolean := True;
+      --  For Ravenscar entry barrier
    end Bounded_Buffer;
 
-end Bounded_Buffers;
+end Bounded_Buffers_Blocking_Producer;
