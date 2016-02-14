@@ -6,6 +6,7 @@ package body Gcode is
 
    function Distance (A, B : Float_Position) return Float_Value is
       Tmp : Float_Value := 0.0;
+      function Sqrt (X : Float_Value) return Float_Value;
 
       ----------
       -- Sqrt --
@@ -22,7 +23,7 @@ package body Gcode is
             return 0.0;
          end if;
          loop
-            New_U := (U + X/U)/2.0;
+            New_U := (U + (X / U)) / 2.0;
             exit when New_U >= U;
             U := New_U;
          end loop;
@@ -43,8 +44,10 @@ package body Gcode is
    -----------
 
    function Image (Val : Float_Value) return String is
-      Int_Part : constant Integer := Integer (Float_Value'Floor (Val));
-      Frac_Part : constant Integer := Integer (Float_Value'Floor (Val * 10000.0));
+      Floor : constant Float_Value := Float_Value'Floor (Val);
+      Int_Part : constant Integer := Integer (Floor);
+      Frac_Part : constant Integer :=
+        Integer (Float_Value'Floor ((Val - Floor) * 10000.0));
    begin
       return Int_Part'Img & "." & Frac_Part'Img;
    end Image;

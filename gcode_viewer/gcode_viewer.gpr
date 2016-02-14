@@ -1,7 +1,6 @@
 with "gtkada";
-with "../gcode/gcode.gpr";
 
-project Gcode_Viewer is
+project Gcode_Viewer extends "../gcode/gcode.gpr" is
 
    for Source_Dirs use ("src");
    for Object_Dir use "obj";

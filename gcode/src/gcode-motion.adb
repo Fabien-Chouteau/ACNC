@@ -1,5 +1,5 @@
+with Ada.Text_IO; use Ada.Text_IO;
 with Ada.Numerics; use Ada.Numerics;
-
 with Gcode.Planner;
 
 package body Gcode.Motion is
@@ -17,6 +17,7 @@ package body Gcode.Motion is
       Feed_Rate : Step_Speed)
    is
    begin
+      Put_Line ("Move_Line to " & Image (Target));
       Gcode.Planner.Planner_Add_Motion (Ctx, Target, Feed_Rate);
    end Move_Line;
 
@@ -64,8 +65,9 @@ package body Gcode.Motion is
          From : constant Float_Position := Start_Point - Offset;
          To   : constant Float_Position := End_Point - Offset;
       begin
-         Travel := Arctan (From (X_Axis) * To (Y_Axis) - From (Y_Axis) * To (X_Axis),
-                           From (X_Axis) * To (X_Axis) + From (Y_Axis) * To (Y_Axis));
+         Travel := Arctan
+           (From (X_Axis) * To (Y_Axis) - From (Y_Axis) * To (X_Axis),
+            From (X_Axis) * To (X_Axis) + From (Y_Axis) * To (Y_Axis));
          if Travel < 0.0 then
             Travel := Travel + 2.0 * Pi;
          end if;
@@ -81,7 +83,7 @@ package body Gcode.Motion is
          end if;
       end;
 
-      Divisions := Natural (abs Travel * Radius) * 5;
+      Divisions := Natural (abs Travel * Radius) * 2;
 
       --  Make sure we always have at least one division
       Divisions := Divisions + 1;

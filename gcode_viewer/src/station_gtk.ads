@@ -13,8 +13,6 @@ package Station_Gtk is
    end record;
 
    overriding
-   procedure Step (Ctx : in out GTK_CNC; Axis : Axis_Name; Dir : Direction);
-   overriding
    function Home (Ctx : in out GTK_CNC; Axis : Axis_Name) return Boolean;
    overriding
    procedure Report_Error (Ctx : in out GTK_CNC;
@@ -30,6 +28,11 @@ package Station_Gtk is
    procedure New_Line (Ctx : in out GTK_CNC);
    overriding
    procedure Put (Ctx : in out GTK_CNC; C : Character);
+
+   procedure Set_Step_Pin (Axis : Axis_Name);
+   procedure Clear_Step_Pin (Axis : Axis_Name);
+   procedure Set_Step_Direction (Axis : Axis_Name;
+                                 Dir : Direction);
 
    type Station_Gtk_Record is record
       Fwd          : Gtk_Button;

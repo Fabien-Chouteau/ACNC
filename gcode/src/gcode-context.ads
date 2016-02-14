@@ -15,7 +15,6 @@ package Gcode.Context is
       Virt_Position : Step_Position;
    end record;
 
-   procedure Step (Ctx : in out GContext; Axis : Axis_Name; Dir : Direction);
    function Home (Ctx : in out GContext; Axis : Axis_Name) return Boolean;
 
    procedure Report_Error (Ctx : in out GContext;

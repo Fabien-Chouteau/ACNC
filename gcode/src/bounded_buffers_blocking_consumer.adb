@@ -57,7 +57,7 @@ package body Bounded_Buffers_Blocking_Consumer is
          Item := Values (Next_Out);
          Next_Out := (Next_Out mod Capacity) + 1;
          Count := Count - 1;
-         Not_Empty := Count = 0;
+         Not_Empty := Count /= 0;
       end Remove;
 
       -----------

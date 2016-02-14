@@ -27,6 +27,7 @@ with Glib.Properties;
 with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
 --  with GNAT.Serial_Communications;
 with Gtk.Dialog; use Gtk.Dialog;
+with Stepper; use Stepper;
 
 package body Station_Gtk is
 
@@ -61,19 +62,8 @@ package body Station_Gtk is
    use Position_Container;
 
    History : Position_Container.List;
-
-   overriding
-   procedure Step (Ctx : in out GTK_CNC; Axis : Axis_Name; Dir : Direction) is
-      S : constant Steps := (if Dir = Forward then 1 else -1);
-   begin
-      Ctx.Real_Position (Axis) := Ctx.Real_Position (Axis) + S;
-
-      --  Z moves don't show up in the interface so we don't have to
-      --  record them.
-      if Axis /= Z_Axis then
-         History.Append (Ctx.Real_Position);
-      end if;
-   end Step;
+   Current_Position : Step_Position := (others => 0);
+   Current_Direction : Axis_Directions := (others => Forward);
 
    overriding
    function Home (Ctx : in out GTK_CNC; Axis : Axis_Name) return Boolean is
@@ -105,6 +95,7 @@ package body Station_Gtk is
      (Gtk_Drawing_Area_Record, Boolean);
 
    function Window_Idle return Boolean;
+   function Stepper_Tick return Boolean;
 
    function Redraw (Area  : access Gtk_Drawing_Area_Record'Class;
                     Cr    : Cairo_Context) return Boolean;
@@ -177,16 +168,16 @@ package body Station_Gtk is
          else
             Set_Source_Rgb (Cr, 1.0, 0.0, 0.0);
          end if;
-         Rectangle (Cr     => Cr,
-                    X      => Gdouble (Pos (X_Axis)) - 1.0 * (1.0 / Zoom),
-                    Y      => Gdouble (Pos (Y_Axis)) - 1.0 * (1.0 / Zoom),
-                    Width  => 2.0 * (1.0 / Zoom),
-                    Height => 2.0 * (1.0 / Zoom));
-         Cairo.Fill (Cr);
---           Line_To (Cr, Gdouble (Pos.X), Gdouble (Pos.Y));
+--           Rectangle (Cr     => Cr,
+--                      X      => Gdouble (Pos (X_Axis)) - 1.0 * (1.0 / Zoom),
+--                      Y      => Gdouble (Pos (Y_Axis)) - 1.0 * (1.0 / Zoom),
+--                      Width  => 2.0 * (1.0 / Zoom),
+--                      Height => 2.0 * (1.0 / Zoom));
+--           Cairo.Fill (Cr);
+         Line_To (Cr, Gdouble (Pos (X_Axis)), Gdouble (Pos (Y_Axis)));
 
       end loop;
---        Cairo.Stroke (Cr);
+      Cairo.Stroke (Cr);
       Cairo.Restore (Cr);
 
       return False;
@@ -454,7 +445,12 @@ package body Station_Gtk is
       Main_W.Show_All;
 
       Src_Id := Timeout_Add (100, Window_Idle'Access);
+      Src_Id := Timeout_Add (1, Stepper_Tick'Access);
    end Init_Gtk;
+
+   ---------
+   -- Log --
+   ---------
 
    overriding
    procedure Log (Ctx : in out GTK_CNC; Lvl : Log_Level; Str : String) is
@@ -474,6 +470,10 @@ package body Station_Gtk is
 --        end if;
    end Log;
 
+   ---------
+   -- Put --
+   ---------
+
    overriding
    procedure Put (Ctx : in out GTK_CNC; Str : String) is
       pragma Unreferenced (Ctx);
@@ -486,11 +486,21 @@ package body Station_Gtk is
 --           null;
 --        end if;
    end Put;
+
+   --------------
+   -- Put_Line --
+   --------------
+
    overriding
    procedure Put_Line (Ctx : in out GTK_CNC; Str : String) is
    begin
       Ctx.Put (Str & ASCII.CR);
    end Put_Line;
+
+   --------------
+   -- New_Line --
+   --------------
+
    overriding
    procedure New_Line (Ctx : in out GTK_CNC) is
       Str : String (1 .. 1);
@@ -498,6 +508,11 @@ package body Station_Gtk is
       Str (1) := ASCII.CR;
       Ctx.Put (Str);
    end New_Line;
+
+   ---------
+   -- Put --
+   ---------
+
    overriding
    procedure Put (Ctx : in out GTK_CNC; C : Character) is
       Str : String (1 .. 1);
@@ -506,4 +521,50 @@ package body Station_Gtk is
       Ctx.Put (Str);
    end Put;
 
+   ------------------
+   -- Set_Step_Pin --
+   ------------------
+
+   procedure Set_Step_Pin (Axis : Axis_Name) is
+      S : constant Steps :=
+        (if Current_Direction (Axis) = Forward then 1 else -1);
+   begin
+      Current_Position (Axis) := Current_Position (Axis) + S;
+
+      --  Do not Save Z_Axis
+      if Axis /= Z_Axis then
+         History.Append (Current_Position);
+      end if;
+   end Set_Step_Pin;
+
+   --------------------
+   -- Clear_Step_Pin --
+   --------------------
+
+   procedure Clear_Step_Pin (Axis : Axis_Name) is
+   begin
+      null;
+   end Clear_Step_Pin;
+
+   procedure Set_Step_Direction (Axis : Axis_Name;
+                                 Dir : Direction)
+   is
+   begin
+      Current_Direction (Axis) := Dir;
+   end Set_Step_Direction;
+
+   ------------------
+   -- Stepper_Tick --
+   ------------------
+
+   function Stepper_Tick return Boolean is
+   begin
+      Stepper.Execute_Step_Event;
+      return True;
+   end Stepper_Tick;
+
+begin
+   Stepper.Set_Stepper_Callbacks (Set_Step       => Set_Step_Pin'Access,
+                                  Clear_Step     => Clear_Step_Pin'Access,
+                                  Set_Direcetion => Set_Step_Direction'Access);
 end Station_Gtk;

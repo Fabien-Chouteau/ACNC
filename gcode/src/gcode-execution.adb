@@ -1,9 +1,19 @@
 with Gcode.Motion;
+with Gcode.Planner;
 
 package body Gcode.Execution is
 
    use type Step_Position;
    use type Float_Position;
+
+   procedure Line_Command (Ctx : in out GContext'Class;
+                           Feed_Rate : Step_Speed);
+   procedure Circle_Command
+     (Ctx : in out GContext'Class;
+      Dir : Gcode.Motion.Circular_Interpolation_Direction;
+      Feed_Rate : Step_Speed);
+   procedure Return_To_Home (Ctx : in out GContext'Class;
+                             Feed_Rate : Step_Speed);
 
    ------------------
    -- Line_Command --
@@ -93,10 +103,9 @@ package body Gcode.Execution is
    -- Return_To_Home --
    --------------------
 
-   function Return_To_Home (Ctx : in out GContext'Class;
-                            Feed_Rate : Step_Speed) return Boolean is
-      X_At_Home, Y_At_Home, Z_At_Home : Boolean := False;
-      X_Cnt, Y_Cnt, Z_Cnt : Natural := 0;
+   procedure Return_To_Home (Ctx : in out GContext'Class;
+                             Feed_Rate : Step_Speed)
+   is
    begin
       --  First, go to the intermediate position
       if Ctx.B ('X').Is_Set
@@ -108,42 +117,8 @@ package body Gcode.Execution is
          Line_Command (Ctx, Feed_Rate);
       end if;
 
-      while not X_At_Home or else not Y_At_Home or else not Z_At_Home loop
-         if not X_At_Home and then not Ctx.Home (X_Axis) then
-            Ctx.Step (X_Axis, Backward);
-            X_Cnt := X_Cnt + 1;
-         else
-            X_At_Home := True;
-         end if;
-         if not Y_At_Home and then not Ctx.Home (Y_Axis) then
-            Ctx.Step (Y_Axis, Backward);
-            Y_Cnt := Y_Cnt + 1;
-         else
-            Y_At_Home := True;
-         end if;
-         if not Z_At_Home and then not Ctx.Home (Z_Axis) then
-            Ctx.Step (Z_Axis, Forward);
-            Z_Cnt := Z_Cnt + 1;
-         else
-            Z_At_Home := True;
-         end if;
-      end loop;
---        while not Ctx.At_Home (Ctx, X_Axis) loop
---           Ctx.Do_Step_X (Ctx, Backward);
---        end loop;
---        while not Ctx.At_Home (Ctx, Y_Axis) loop
---           Ctx.Do_Step_Y (Ctx, Backward);
---        end loop;
---        while not Ctx.At_Home (Ctx, Z_Axis) loop
---           Ctx.Do_Step_Z (Ctx, Forward);
---        end loop;
-
-      --  Set known home position
-      Ctx.Step_Per_Millimeter (X_Axis) := Float_Value (X_Cnt) / 38.5;
-      Ctx.Step_Per_Millimeter (Y_Axis) := Float_Value (Y_Cnt) / 37.0;
-      Ctx.Step_Per_Millimeter (Z_Axis) := Float_Value (Z_Cnt) / 15.0;
-      Ctx.Real_Position := (0, 0, Z_Cnt);
-      return True;
+      Gcode.Planner.Planner_Add_Homing (Ctx       => Ctx,
+                                        Feed_Rate => Feed_Rate);
    end Return_To_Home;
 
    -------------
@@ -173,12 +148,12 @@ package body Gcode.Execution is
 
       Feed := Ctx.Current_Feed_Rate;
       if Ctx.Unit = Inches then
-         Ctx.B('X').Value := Inch_To_Milli (Ctx.B('X').Value);
-         Ctx.B('Y').Value := Inch_To_Milli (Ctx.B('Y').Value);
-         Ctx.B('Z').Value := Inch_To_Milli (Ctx.B('Z').Value);
-         Ctx.B('I').Value := Inch_To_Milli (Ctx.B('I').Value);
-         Ctx.B('J').Value := Inch_To_Milli (Ctx.B('J').Value);
-         Ctx.B('R').Value := Inch_To_Milli (Ctx.B('R').Value);
+         Ctx.B ('X').Value := Inch_To_Milli (Ctx.B ('X').Value);
+         Ctx.B ('Y').Value := Inch_To_Milli (Ctx.B ('Y').Value);
+         Ctx.B ('Z').Value := Inch_To_Milli (Ctx.B ('Z').Value);
+         Ctx.B ('I').Value := Inch_To_Milli (Ctx.B ('I').Value);
+         Ctx.B ('J').Value := Inch_To_Milli (Ctx.B ('J').Value);
+         Ctx.B ('R').Value := Inch_To_Milli (Ctx.B ('R').Value);
       end if;
 
       if Ctx.B ('G').Is_Set then
@@ -195,12 +170,12 @@ package body Gcode.Execution is
                Circle_Command (Ctx, Gcode.Motion.Counter_Clockwise, Feed);
             when 20 => Ctx.Unit := Inches;
             when 21 => Ctx.Unit := Millimeters;
-            when 28 => return Return_To_Home (Ctx, Feed);
+            when 28 => Return_To_Home (Ctx, Feed);
             when others =>
                Ctx.Report_Error (Line, "Unknown G code " & Int_Part'Img, 0, 0);
                return False;
          end case;
       end if;
       return True;
-   end;
+   end Execute;
 end Gcode.Execution;

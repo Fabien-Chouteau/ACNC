@@ -1,7 +1,11 @@
 with Bounded_Buffers_Blocking_Consumer;
 with Bounded_Buffers_Blocking_Producer;
+with Ada.Text_IO; use Ada.Text_IO;
 
 package body Gcode.Planner is
+
+   Acceleration_Ticks_Per_Second : constant := 100;
+   Max_Segment_Time_Second : constant := 1.0 / Acceleration_Ticks_Per_Second;
 
    use type Float_Position;
    use type Step_Position;
@@ -22,15 +26,10 @@ package body Gcode.Planner is
       Step_Event_Count : Steps := 0;
       --  Number of steps required to complete this block
 
-      Entry_Speed : Step_Speed := 0.0;
+      Entry_Speed   : Step_Speed := 0.0;
       Nominal_Speed : Step_Speed := 0.0;
-      Acceleration : Step_Acceleration := Step_Acceleration'Last;
+      Acceleration  : Step_Acceleration := Step_Acceleration'Last;
       Remaining_Distance : Float_Value := 0.0;
-   end record;
-
-   type Segment_Block is record
-      Target    : Float_Position;
-      Feed_Rate : Float_Value;
    end record;
 
    package Motion_Buffer_Package is
@@ -39,12 +38,13 @@ package body Gcode.Planner is
      new Bounded_Buffers_Blocking_Producer (Segment_Block);
 
    Motion_Block_Buffer : Motion_Buffer_Package.Bounded_Buffer
-     (32, Motion_Buffer_Package.Default_Ceiling);
+     (128, Motion_Buffer_Package.Default_Ceiling);
    Segment_Block_Buffer : Segment_Buffer_Package.Bounded_Buffer
      (64, Segment_Buffer_Package.Default_Ceiling);
 
-
    Planner_Position : Step_Position;
+
+   procedure Wait_And_Add_Motion (M_Block : Motion_Block);
 
    -------------------------
    -- Wait_And_Add_Motion --
@@ -103,17 +103,17 @@ package body Gcode.Planner is
       --  Compute distance
       M_Block.Remaining_Distance := Sqrt (M_Block.Remaining_Distance);
 
-
       if M_Block.Step_Event_Count = 0 then
          --  zero-length block
          return;
       end if;
 
-
       --  Someday I'll do something very clever here...
       M_Block.Entry_Speed := 0.0;
       M_Block.Nominal_Speed := Feed_Rate;
 
+      Put_Line ("Insert new block relative absolute steps:" &
+                  Image (M_Block.Relative_Steps));
       Wait_And_Add_Motion (M_Block);
 
       --  Update planner position
@@ -174,7 +174,8 @@ package body Gcode.Planner is
 --                 Err2 := Err2 + Absolute.X;
 --              end if;
 --           end loop;
---        elsif Absolute.Y >= Absolute.Z and then Absolute.Y >=  Absolute.X then
+--        elsif Absolute.Y >= Absolute.Z and then Absolute.Y >=  Absolute.X
+--        then
 --           Err1 := Absolute.Y / 2.0;
 --           Err2 := Absolute.Y / 2.0;
 --
@@ -264,15 +265,28 @@ package body Gcode.Planner is
 
    procedure Planner_Add_Homing
      (Ctx       : in out GContext'Class;
-      Target    : Float_Position;
       Feed_Rate : Step_Speed)
    is
+      pragma Unreferenced (Ctx, Feed_Rate);
       M_Block : Motion_Block;
    begin
-      Planner_Add_Motion (Ctx, Target, Feed_Rate);
       M_Block.Kind := Motion_Homing;
       Wait_And_Add_Motion (M_Block);
    end Planner_Add_Homing;
+
+   ----------------------
+   -- Get_Next_Segment --
+   ----------------------
+
+   function Get_Next_Segment (Segment : out Segment_Block) return Boolean is
+   begin
+      if not Segment_Block_Buffer.Empty then
+         Segment_Block_Buffer.Remove (Segment);
+         return True;
+      else
+         return False;
+      end if;
+   end Get_Next_Segment;
 
    task Planner_Task is
    end Planner_Task;
@@ -280,13 +294,60 @@ package body Gcode.Planner is
    task body Planner_Task is
       Motion : Motion_Block;
       Segment : Segment_Block;
+      Remaining_Steps : Steps;
+      Step_Per_Milli : Float_Value;
+      pragma Unreferenced (Step_Per_Milli);
+--
+--        Current_Speed : Step_Speed;
+--        Cruise_Speed  : Step_Speed;
+--        Exit_Speed    : Step_Speed;
+--
+      Seg_Time : Float_Value;
+      pragma Unreferenced (Seg_Time);
    begin
       loop
+
+         Put_Line ("Planner: Trying to get a new block");
          --  Blocking call
          Motion_Block_Buffer.Remove (Motion);
 
-         --  Blocking call
-         Segment_Block_Buffer.Insert (Segment);
+         Put_Line ("Planner: Take new motion block (Step event:" &
+                     Motion.Step_Event_Count'Img & ")");
+         case Motion.Kind is
+            when Motion_Dwell =>
+               --  Not implemented
+               raise Program_Error;
+            when Motion_Homing =>
+               --  Not implemented
+               raise Program_Error;
+            when Motion_Line =>
+               Remaining_Steps := Motion.Step_Event_Count;
+
+               Step_Per_Milli :=
+                 Float_Value (Remaining_Steps) / Motion.Remaining_Distance;
+
+               --  Signal this segment as first of the new block
+               Segment.New_Block := True;
+               while Remaining_Steps > 0 loop
+                  Seg_Time := Max_Segment_Time_Second;
+
+                  --  Dummy block spliting until cleaver speed profile is
+                  --  implemented...
+                  Segment.Step_Count := Steps'Min (Remaining_Steps, 500);
+                  Remaining_Steps := Remaining_Steps - Segment.Step_Count;
+
+                  Segment.Directions := Motion.Directions;
+
+                  Put_Line ("Planner: Insert new segment");
+                  --  Blocking call
+                  Segment_Block_Buffer.Insert (Segment);
+
+                  --  Next segements are not first of the block
+                  Segment.New_Block := False;
+
+               end loop;
+               Put_Line ("Planner: End of Block procesing");
+         end case;
       end loop;
    end Planner_Task;
 end Gcode.Planner;
