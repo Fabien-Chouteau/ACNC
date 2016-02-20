@@ -4,6 +4,8 @@ with Ada.Unchecked_Deallocation;
 package body Gcode.Parameters is
 
    procedure Free is new Ada.Unchecked_Deallocation (String, String_Access);
+   function Find (Ctx : Parameters_Set; Id : Parameter_Id) return Natural;
+   function Find (Ctx : Parameters_Set; Name : String) return Natural;
 
    ----------
    -- Find --
@@ -176,8 +178,8 @@ package body Gcode.Parameters is
    begin
       Put_Line ("Print parameters:");
       for Index in Parameter_Range'First .. Ctx.Last - 1 loop
-         if Ctx.Params (Index).name /= null then
-            Put ("#" & Ctx.Params (Index).name.all);
+         if Ctx.Params (Index).Name /= null then
+            Put ("#" & Ctx.Params (Index).Name.all);
          else
             Put ("#" & Ctx.Params (Index).Id'Img);
          end if;

@@ -50,14 +50,16 @@ package body Gcode.Parser is
          Letter : Word_Letter;
       begin
          if Current.Ttype /= Gcode.Lexer.Word then
-            Raise_Error (Ctx,
-                         "Word letter expected at " & Current.Tstart'Img);
+            Ctx.Report_Error (Line   => Line,
+                              Msg    => "Word letter expected",
+                              EStart => Current.Tstart);
             return;
          end if;
 
          if Line (Current.Tstart) not in Word_Letter then
-            Raise_Error (Ctx,
-                        "Unknown word letter: " &  Line (Current.Tstart));
+            Ctx.Report_Error (Line   => Line,
+                              Msg    => "Unknown word letter",
+                              EStart => Current.Tstart);
             return;
          end if;
 
@@ -81,8 +83,9 @@ package body Gcode.Parser is
          if Current.Ttype = Literal then
             Increment;
          else
-            Raise_Error (Ctx,
-                         "Literral expected at :" & Current.Tstart'Img);
+            Ctx.Report_Error (Line   => Line,
+                              Msg    => "Literral expected",
+                              EStart => Current.Tstart);
          end if;
       end Parse_Line_Number;
 
@@ -95,9 +98,9 @@ package body Gcode.Parser is
          Value       : Float_Value;
       begin
          if Current.Ttype /= Param then
-            Raise_Error (Ctx,
-                        "'#' expected at " & Current.Tstart'Img &
-                           " " & Current.Ttype'Img & " found");
+            Ctx.Report_Error (Line   => Line,
+                              Msg    => "'#' expected",
+                              EStart => Current.Tstart);
             return;
          end if;
          Increment;
@@ -105,17 +108,20 @@ package body Gcode.Parser is
             when Param_Name | Literal  =>
                Param_Token := Current;
             when others =>
-               Raise_Error (Ctx,
-                            "Parameter Id expected at " & Current.Tstart'Img &
-                              " " & Current.Ttype'Img & " found");
+               Ctx.Report_Error (Line   => Line,
+                                 Msg    => "Parameter Id expected, " &
+                                   Current.Ttype'Img & " found",
+                                 EStart => Current.Tstart);
                return;
          end case;
 
          Increment;
 
          if Current.Ttype /= Assign then
-            Raise_Error (Ctx,
-                         "Assignment expected at " & Current.Tstart'Img);
+               Ctx.Report_Error (Line   => Line,
+                                 Msg    => "Assignment expected, " &
+                                   Current.Ttype'Img & " found",
+                                 EStart => Current.Tstart);
             return;
          end if;
 
@@ -145,16 +151,17 @@ package body Gcode.Parser is
 
       Tokenize (Line, Ctx, Tokens);
 
-      while not Error_Raised (Ctx) and then Current.Ttype /= Unknown_Token loop
+      while not Error_Raised (Ctx) and then Current.Ttype /= End_Of_Line loop
          case Current.Ttype is
          when Line_Number => Parse_Line_Number;
          when Param => Parse_Param_Declaration;
          when Gcode.Lexer.Word => Parse_Word;
          when Comment => Increment;
          when others =>
-            Raise_Error (Ctx,
-                         "Unexpected token " & Current.Ttype'Img & " at " &
-                           Current.Tstart'Img);
+            Ctx.Report_Error
+              (Line   => Line,
+               Msg    => "Unexpected token " & Current.Ttype'Img,
+               EStart => Current.Tstart);
          end case;
       end loop;
       return not Error_Raised (Ctx);

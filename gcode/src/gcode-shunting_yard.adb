@@ -3,6 +3,9 @@ with Gcode.Parameters; use Gcode.Parameters;
 with Ada.Numerics.Generic_Elementary_Functions;
 
 package body Gcode.Shunting_Yard is
+   function Eval_Stack (Line   : String;
+                        Ctx    : in out GContext'Class;
+                        Output : in out Token_List) return Float_Value;
 
    package Float_Functions is new
      Ada.Numerics.Generic_Elementary_Functions (Float_Value);
@@ -37,19 +40,19 @@ package body Gcode.Shunting_Yard is
    begin
       case Tok.Ttype is
          when Op_Plus =>
-            R1 := Eval_Stack(Line, Ctx, Output);
-            R2 := Eval_Stack(Line, Ctx, Output);
+            R1 := Eval_Stack (Line, Ctx, Output);
+            R2 := Eval_Stack (Line, Ctx, Output);
             return R2 + R1;
          when Op_Uni_Minus =>
-            R1 := Eval_Stack(Line, Ctx, Output);
+            R1 := Eval_Stack (Line, Ctx, Output);
             return -R1;
          when Op_Minus =>
-            R1 := Eval_Stack(Line, Ctx, Output);
-            R2 := Eval_Stack(Line, Ctx, Output);
+            R1 := Eval_Stack (Line, Ctx, Output);
+            R2 := Eval_Stack (Line, Ctx, Output);
             return R2 - R1;
          when Op_Div =>
-            R1 := Eval_Stack(Line, Ctx, Output);
-            R2 := Eval_Stack(Line, Ctx, Output);
+            R1 := Eval_Stack (Line, Ctx, Output);
+            R2 := Eval_Stack (Line, Ctx, Output);
             if R1 = 0.0 then
                Put_Line ("Division by zero at " & Tok.Tstart'Img);
                return 0.0;
@@ -57,22 +60,24 @@ package body Gcode.Shunting_Yard is
                return R2 / R1;
             end if;
          when Op_Mul =>
-            R1 := Eval_Stack(Line, Ctx, Output);
-            R2 := Eval_Stack(Line, Ctx, Output);
+            R1 := Eval_Stack (Line, Ctx, Output);
+            R2 := Eval_Stack (Line, Ctx, Output);
             return R2 * R1;
          when Op_Power =>
-            R1 := Eval_Stack(Line, Ctx, Output);
-            R2 := Eval_Stack(Line, Ctx, Output);
+            R1 := Eval_Stack (Line, Ctx, Output);
+            R2 := Eval_Stack (Line, Ctx, Output);
             return Float_Functions."**"(R2, R1);
          when Literal =>
             return Tok.Value;
          when others =>
-            Raise_Error (Ctx,
-                         "Unexpected " & Tok.Ttype'Img & " at " &
-                           Tok.Tstart'Img & " in expression");
+            Ctx.Report_Error (Line   => Line,
+                              Msg    => "Unexpected " & Tok.Ttype'Img &
+                              " in expression",
+                              EStart => Tok.Tstart,
+                              EEnd   => Tok.Tend);
             return 0.0;
       end case;
-   end;
+   end Eval_Stack;
 
    -------------------------
    -- Evaluate_Expression --
@@ -86,12 +91,17 @@ package body Gcode.Shunting_Yard is
    is
       Output, Op_Stack : Token_List;
 
-      function Next (Cnt : Natural := 1)return Token is
+      function Next (Cnt : Natural := 1) return Token is
         (Get (Tokens, Cur + Cnt));
 
       Previous : Token := (0, 0, Unknown_Token, 0.0);
       Current  : Token;
    begin
+      Push (Output, Tok => (Tstart => 0,
+                            Tend   => 0,
+                            Ttype  => End_Of_Expression,
+                            Value  => 0.0));
+
       while Cur < Tokens.Last loop
          Current := Get (Tokens, Cur);
          case Current.Ttype is
@@ -108,8 +118,11 @@ package body Gcode.Shunting_Yard is
                         Value_Tok.Tend := Next.Tend;
                         Cur := Cur + 1;
                         if not Defined (Ctx.Params, Name) then
-                           Raise_Error (Ctx,
-                                        "Undefined named parameter: " & Name);
+                           Ctx.Report_Error
+                             (Line   => Line,
+                              Msg    => "Undefined named parameter: " & Name,
+                              EStart => Current.Tstart,
+                              EEnd   => Current.Tend);
                         else
                            Value_Tok.Tend  := Cur - 1;
                            Value_Tok.Ttype := Literal;
@@ -127,8 +140,12 @@ package body Gcode.Shunting_Yard is
                         Value_Tok.Tend := Next.Tend;
                         Cur := Cur + 1;
                         if not Defined (Ctx.Params, Id) then
-                           Raise_Error
-                             (Ctx, "Undefined numbered parameter: " & Id'Img);
+                           Ctx.Report_Error
+                             (Line   => Line,
+                              Msg    => "Undefined numbered parameter: " &
+                                Id'Img,
+                              EStart => Current.Tstart,
+                              EEnd   => Current.Tend);
                         else
                            Value_Tok.Tend  := Cur - 1;
                            Value_Tok.Ttype := Literal;
@@ -137,8 +154,11 @@ package body Gcode.Shunting_Yard is
                         end if;
                      end;
                   when others =>
-                     Raise_Error (Ctx, "Parameter Id expected at " &
-                                    Natural'Image (Current.Tend + 1));
+                     Ctx.Report_Error
+                       (Line   => Line,
+                        Msg    => "Parameter Id expected",
+                        EStart => Current.Tstart,
+                        EEnd   => Current.Tend);
                end case;
             when Expr_Start => Push (Op_Stack, Current);
             when Expr_End =>
@@ -148,8 +168,10 @@ package body Gcode.Shunting_Yard is
                   Push (Output, Pop (Op_Stack));
                end loop;
                if Top (Op_Stack).Ttype = Unknown_Token then
-                  Raise_Error
-                    (Ctx, "Unmatched right bracket at" & Current.Tstart'Img);
+                  Ctx.Report_Error
+                    (Line   => Line,
+                     Msg    => "Unmatched right bracket",
+                     EStart => Current.Tstart);
                else
                   --  Remove Expr_Start
                   Pop (Op_Stack);
@@ -169,13 +191,14 @@ package body Gcode.Shunting_Yard is
                      Top_Type : constant Token_Type := Top (Op_Stack).Ttype;
                      Cur_Type : constant Token_Type := Current.Ttype;
                   begin
+                     exit when Top_Type not in Operators;
                      exit when
-                         Top_Type not in Operators
-                       or else
-                         not ((Precedence (Cur_Type) < Precedence (Top_Type))
-                              or else (Asso (Cur_Type) = Left
-                                       and then
-                                       Precedence (Cur_Type) = Precedence (Top_Type)));
+                     not ((Precedence (Cur_Type) < Precedence (Top_Type))
+                          or else
+                            (Asso (Cur_Type) = Left
+                             and then
+                             Precedence (Cur_Type) = Precedence (Top_Type)));
+
                      Push (Output, Pop (Op_Stack));
                   end;
                end loop;
@@ -192,13 +215,15 @@ package body Gcode.Shunting_Yard is
       --  Move the remaining operation in the output
       while Top (Op_Stack).Ttype /= Unknown_Token loop
          if Top (Op_Stack).Ttype = Expr_Start then
-            Raise_Error
-              (Ctx, "Unmatched left bracket at " & Top (Op_Stack).Tstart'Img);
+            Ctx.Report_Error
+              (Line   => Line,
+               Msg    => "Unmatched left bracket",
+               EStart => Top (Op_Stack).Tstart);
             return 0.0;
          else
             Push (Output, Pop (Op_Stack));
          end if;
       end loop;
       return Eval_Stack (Line, Ctx, Output);
-   end;
+   end Evaluate_Expression;
 end Gcode.Shunting_Yard;

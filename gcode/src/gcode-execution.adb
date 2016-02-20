@@ -50,13 +50,13 @@ package body Gcode.Execution is
    begin
       --  Ctx.Log (Info, "Move_Circle");
       if not (Ctx.B ('X').Is_Set or else Ctx.B ('Y').Is_Set) then
-         Ctx.Report_Error ("", "X or Y is required for circular motion",
+         Ctx.Report_Error ("", "X or Y required for circular motion",
                            0, 0);
          return;
       end if;
 
       if not (Ctx.B ('I').Is_Set or else Ctx.B ('J').Is_Set) then
-         Ctx.Report_Error ("", "I or J is required for circular motion",
+         Ctx.Report_Error ("", "I or J required for circular motion",
                            0, 0);
          return;
       end if;

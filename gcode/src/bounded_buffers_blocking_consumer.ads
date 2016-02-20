@@ -43,6 +43,14 @@ generic
    type Element is private;
    --  The type of the values contained within buffer objects
 
+   Capacity : Positive;
+   --  Objects of type Bounded_Buffer specify the maximum number of Element
+   --  values they can hold via the discriminant Capacity.
+
+   Ceiling : System.Priority;
+   --  Users must specify the ceiling priority for the object. If the
+   --  Real-Time Systems Annex is not in use this value is not important.
+
 package Bounded_Buffers_Blocking_Consumer is
    pragma Pure;
 
@@ -50,17 +58,7 @@ package Bounded_Buffers_Blocking_Consumer is
    --  Content is an internal artefact that cannot be hidden because protected
    --  types cannot contain type declarations.
 
-   Default_Ceiling : constant System.Priority := System.Default_Priority;
-   --  A convenience value for the Ceiling discriminant
-
    protected type Bounded_Buffer
-      (Capacity : Positive;
-      --  Objects of type Bounded_Buffer specify the maximum number of Element
-      --  values they can hold via the discriminant Capacity.
-
-      Ceiling : System.Priority)
-      --  Users must specify the ceiling priority for the object. If the
-      --  Real-Time Systems Annex is not in use this value is not important.
    is
       pragma Priority (Ceiling);
 

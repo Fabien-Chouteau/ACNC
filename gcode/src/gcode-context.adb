@@ -62,6 +62,7 @@ package body Gcode.Context is
    procedure Raise_Error (Ctx : in out GContext; Msg : String) is
    begin
       Ctx.Error_Flag := True;
+      Ctx.Put_Line (Msg);
       raise Gcode_Exception with Msg;
    end Raise_Error;
 
@@ -106,19 +107,29 @@ package body Gcode.Context is
       Ctx.Put_Line (Line);
       if EStart /= 0 and then EEnd /= 0 then
          for Index in Line'First .. EStart - 1 loop
-            Ctx.Put (' ');
+            Put (GContext'Class (Ctx), ' ');
          end loop;
-         Ctx.Put ('^');
+         Put (GContext'Class (Ctx), '^');
          if EStart /= EEnd then
             for Index in EStart + 1 .. EEnd - 1 loop
-               Ctx.Put ('-');
+               Put (GContext'Class (Ctx), '-');
             end loop;
-            Ctx.Put ('^');
+            Put (GContext'Class (Ctx), '^');
          end if;
          Ctx.New_Line;
       end if;
-      Ctx.Put_Line ("Error: " & Msg);
-      --  Ctx.Log (Error, Msg);
+      Ctx.Raise_Error ("Error: " & Msg);
+   end Report_Error;
+
+   ------------------
+   -- Report_Error --
+   ------------------
+
+   procedure Report_Error (Ctx : in out GContext;
+                           Line, Msg : String;
+                           EStart : Natural) is
+   begin
+      Report_Error (Ctx, Line, Msg, EStart, EStart);
    end Report_Error;
 
    ---------
@@ -140,20 +151,11 @@ package body Gcode.Context is
    -- Put --
    ---------
 
-   procedure Put (Ctx : in out GContext; C : Character) is
-      pragma Unreferenced (Ctx);
-   begin
-      Put (C);
-   end Put;
-
-   ---------
-   -- Put --
-   ---------
-
    procedure Put (Ctx : in out GContext; Str : String) is
-      pragma Unreferenced (Ctx);
    begin
-      Put (Str);
+      for C of Str loop
+         Put (GContext'Class (Ctx), C);
+      end loop;
    end Put;
 
    --------------
@@ -161,9 +163,9 @@ package body Gcode.Context is
    --------------
 
    procedure Put_Line (Ctx : in out GContext; Str : String) is
-      pragma Unreferenced (Ctx);
    begin
-      Put_Line (Str);
+      Ctx.Put (Str);
+      Ctx.New_Line;
    end Put_Line;
 
    --------------
@@ -171,9 +173,8 @@ package body Gcode.Context is
    --------------
 
    procedure New_Line (Ctx : in out GContext) is
-      pragma Unreferenced (Ctx);
    begin
-      New_Line;
+      Ctx.Put (ASCII.CR & ASCII.LF);
    end New_Line;
 
 end Gcode.Context;

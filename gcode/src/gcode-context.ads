@@ -3,7 +3,7 @@ with Gcode.Parameters; use Gcode.Parameters;
 
 package Gcode.Context is
 
-   type GContext is tagged record
+   type GContext is abstract tagged record
       Params : Parameters_Set;
       Unit : Coord_Unit := Millimeters;
       B : Block;
@@ -20,6 +20,9 @@ package Gcode.Context is
    procedure Report_Error (Ctx : in out GContext;
                            Line, Msg : String;
                            EStart, EEnd : Natural);
+   procedure Report_Error (Ctx : in out GContext;
+                           Line, Msg : String;
+                           EStart : Natural);
 
    function Step_To_Milli (Ctx : in out GContext; S : Step_Position)
                            return Float_Position;
@@ -34,7 +37,7 @@ package Gcode.Context is
 
    type Log_Level is (Info, Warning, Error, Board);
    procedure Log (Ctx : in out GContext; Lvl : Log_Level; Str : String);
-   procedure Put (Ctx : in out GContext; C : Character);
+   procedure Put (Ctx : in out GContext; C : Character) is abstract;
    procedure Put (Ctx : in out GContext; Str : String);
    procedure Put_Line (Ctx : in out GContext; Str : String);
    procedure New_Line (Ctx : in out GContext);

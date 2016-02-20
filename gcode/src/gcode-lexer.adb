@@ -227,7 +227,7 @@ package body Gcode.Lexer is
             when '.' =>
                if Floating then
                   --  Two points in a number...
-                  raise Program_Error;
+                  raise Gcode_Exception with "Two points in a number...";
                end if;
 
                --  Ret := Ret / 10.0**Cnt; is not available...
@@ -311,7 +311,9 @@ package body Gcode.Lexer is
          Tok.Tstart := Cursor;
          Tok.Ttype := Param_Name;
          if Line (Cursor) /= '<' then
-            Raise_Error (Ctx, "'<' expected at " & Cursor'Img);
+            Ctx.Report_Error (Line   => Line,
+                              Msg    => "'<' expected",
+                              EStart => Cursor);
             return;
          end if;
          loop
@@ -319,11 +321,15 @@ package body Gcode.Lexer is
             exit when End_Of_Line or else Line (Cursor) = '>';
          end loop;
          if End_Of_Line then
-            Raise_Error (Ctx, "Unmatched '<' at " & Tok.Tstart'Img);
+            Ctx.Report_Error (Line   => Line,
+                              Msg    => "Unmatched '<'",
+                              EStart => Tok.Tstart);
             return;
          end if;
          if Cursor = Tok.Tstart + 1 then
-            Raise_Error (Ctx, "Empty parameter name at " & Cursor'Img);
+            Ctx.Report_Error (Line   => Line,
+                              Msg    => "Empty parameter name",
+                              EStart => Cursor);
             return;
          end if;
          Tok.Tend := Cursor;
@@ -345,7 +351,9 @@ package body Gcode.Lexer is
             Increment;
          end loop;
          if Cursor = Tok.Tstart then
-            Raise_Error (Ctx, "Literal expected at " & Cursor'Img);
+            Ctx.Report_Error (Line   => Line,
+                              Msg    => "Literal expected",
+                              EStart => Cursor);
             return;
          end if;
          Tok.Tend := Cursor - 1;
@@ -371,17 +379,19 @@ package body Gcode.Lexer is
          end if;
          loop
             Increment;
+            exit when End_Of_Line or else Line (Cursor) = ')';
             if Line (Cursor) = '(' then
-               Raise_Error (Ctx,
-                            "Neested parenteses not supported at " &
-                              Cursor'Img);
+               Ctx.Report_Error (Line   => Line,
+                                 Msg    => "Neested parenteses not supported",
+                                 EStart => Cursor);
                return;
             end if;
-            exit when End_Of_Line or else Line (Cursor) = ')';
          end loop;
          if End_Of_Line then
-            Raise_Error (Ctx,
-                         "Unmatched Comment parenteses ar " & Tok.Tstart'Img);
+            Ctx.Report_Error (Line   => Line,
+                              Msg    => "Unmatched Comment parenteses",
+                              EStart => Tok.Tstart,
+                              EEnd   => Cursor);
             return;
          end if;
          Tok.Tend := Cursor - 1;
@@ -421,8 +431,9 @@ package body Gcode.Lexer is
             when '#' => Append (Tokens, Param, Cursor);
             when '<' => Tokenize_Param_Name;
             when '>' =>
-               Ctx.Report_Error (Line, "Unmatched '>' at " & Cursor'Img,
-                                 Cursor, Cursor);
+               Ctx.Report_Error (Line   => Line,
+                                 Msg    => "Unmatched '>'",
+                                 EStart => Cursor);
                return;
             when '0' .. '9'  | '.' => Tokenize_Number;
             when '=' => Append (Tokens, Assign, Cursor);
@@ -436,8 +447,8 @@ package body Gcode.Lexer is
             when '(' | ';' =>  Tokenize_Comment;
             when ')' =>
                Ctx.Report_Error (Line,
-                                 "Unmatched right paren at " & Cursor'Img,
-                                 Cursor, Cursor);
+                                 "Unmatched Comment parenteses",
+                                 Cursor);
                return;
             when '*' =>
                if Next_Char = '*' then
@@ -447,13 +458,15 @@ package body Gcode.Lexer is
                   Append (Tokens, Op_Mul, Cursor);
                end if;
             when '/' => Append (Tokens, Op_Div, Cursor);
-            when ASCII.LF | ASCII.CR => return;
+            when ASCII.LF | ASCII.CR =>
+               exit;
             when others =>
                Ctx.Report_Error (Line, "Unknown Character '" & Line (Cursor) &
-                                   "'", Cursor, Cursor);
+                                   "'", Cursor);
                return;
          end case;
          Increment;
       end loop;
+      Append (Tokens, End_Of_Line, Cursor);
    end Tokenize;
 end Gcode.Lexer;

@@ -3,7 +3,8 @@ package Gcode.Lexer is
 
    type Token_Type is (Unknown_Token, Param, Param_Name, Expr_Start, Expr_End,
                        Op_Plus, Op_Minus, Op_Uni_Minus, Op_Mul, Op_Div,
-                       Op_Power, Word, Assign, Line_Number, Literal, Comment);
+                       Op_Power, Word, Assign, Line_Number, Literal, Comment,
+                       End_Of_Line, End_Of_Expression);
    type Token is record
       Tstart, Tend : Natural := 0;
       Ttype : Token_Type := Unknown_Token;
@@ -31,7 +32,7 @@ package Gcode.Lexer is
                      Value  : Float_Value := 0.0);
    procedure Insert (Tokens : in out Token_List; Tok : Token;
                      After : Token_Range);
-   procedure push (Tokens : in out Token_List; Tok : Token) renames Append;
+   procedure Push (Tokens : in out Token_List; Tok : Token) renames Append;
    function Top (Tokens : Token_List) return Token;
    function Pop (Tokens : in out Token_List) return Token;
    procedure Pop (Tokens : in out Token_List);

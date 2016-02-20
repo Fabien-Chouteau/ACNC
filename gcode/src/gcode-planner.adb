@@ -1,5 +1,6 @@
 with Bounded_Buffers_Blocking_Consumer;
 with Bounded_Buffers_Blocking_Producer;
+with System;
 
 package body Gcode.Planner is
 
@@ -32,14 +33,14 @@ package body Gcode.Planner is
    end record;
 
    package Motion_Buffer_Package is
-     new Bounded_Buffers_Blocking_Consumer (Motion_Block);
+     new Bounded_Buffers_Blocking_Consumer (Motion_Block, 128,
+                                            System.Default_Priority);
    package Segment_Buffer_Package is
-     new Bounded_Buffers_Blocking_Producer (Segment);
+     new Bounded_Buffers_Blocking_Producer (Segment, 64,
+                                            System.Default_Priority);
 
-   Motion_Block_Buffer : Motion_Buffer_Package.Bounded_Buffer
-     (128_000, Motion_Buffer_Package.Default_Ceiling);
-   Segment_Block_Buffer : Segment_Buffer_Package.Bounded_Buffer
-     (64_000, Segment_Buffer_Package.Default_Ceiling);
+   Motion_Block_Buffer : Motion_Buffer_Package.Bounded_Buffer;
+   Segment_Block_Buffer : Segment_Buffer_Package.Bounded_Buffer;
 
    Planner_Position : Step_Position;
 
