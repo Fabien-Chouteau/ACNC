@@ -1,6 +1,5 @@
 with Bounded_Buffers_Blocking_Consumer;
 with Bounded_Buffers_Blocking_Producer;
-with Ada.Text_IO; use Ada.Text_IO;
 
 package body Gcode.Planner is
 
@@ -35,12 +34,12 @@ package body Gcode.Planner is
    package Motion_Buffer_Package is
      new Bounded_Buffers_Blocking_Consumer (Motion_Block);
    package Segment_Buffer_Package is
-     new Bounded_Buffers_Blocking_Producer (Segment_Block);
+     new Bounded_Buffers_Blocking_Producer (Segment);
 
    Motion_Block_Buffer : Motion_Buffer_Package.Bounded_Buffer
-     (128, Motion_Buffer_Package.Default_Ceiling);
+     (128_000, Motion_Buffer_Package.Default_Ceiling);
    Segment_Block_Buffer : Segment_Buffer_Package.Bounded_Buffer
-     (64, Segment_Buffer_Package.Default_Ceiling);
+     (64_000, Segment_Buffer_Package.Default_Ceiling);
 
    Planner_Position : Step_Position;
 
@@ -112,136 +111,11 @@ package body Gcode.Planner is
       M_Block.Entry_Speed := 0.0;
       M_Block.Nominal_Speed := Feed_Rate;
 
-      Put_Line ("Insert new block relative absolute steps:" &
-                  Image (M_Block.Relative_Steps));
       Wait_And_Add_Motion (M_Block);
 
       --  Update planner position
       Planner_Position := Target_Steps;
    end Planner_Add_Motion;
-
-   --     ------------------------
---     -- Planner_Add_Motion --
---     ------------------------
---
---     procedure Planner_Add_Motion
---       (Ctx       : in out GContext'Class;
---        Target    : Float_Position;
---        Feed_Rate : Float_Value)
---     is
---        D_Step, Cmd : Step_Position;
---        D, Absolute : Float_Position;
---        Err1, Err2 : Float_Value;
---        Dir_X, Dir_Y, Dir_Z : Direction;
---     begin
---        Wait_And_Add_Motion ((Kind      => Motion_Line,
---                             Target     => Target,
---                             Feed_Rate  => Feed_Rate));
---
---        Ctx.Log (Info, "Move_To " & Image (Target));
---        Cmd := Milli_To_Step (Ctx, Target);
---
---        D_Step := Cmd - Ctx.Real_Position;
---        D := (Float_Value (D_Step.X),
---              Float_Value (D_Step.Y),
---              Float_Value (D_Step.Z));
---        Absolute := abs D;
---
---        Ctx.Put_Line ("Move_To steps" & Image (D_Step));
---        if D_Step = (0, 0, 0) then
---           --  Nothing to do...
---           return;
---        end if;
---
---        Dir_X := (if D_Step.X >= 0 then Forward else Backward);
---        Dir_Y := (if D_Step.Y >= 0 then Forward else Backward);
---        Dir_Z := (if D_Step.Z >= 0 then Forward else Backward);
---
---        if Absolute.X >= Absolute.Z and then Absolute.X >= Absolute.Y then
---           Err1 := Absolute.X / 2.0;
---           Err2 := Absolute.X / 2.0;
---
---           for Cnt in 0 .. Integer (Absolute.X) - 1 loop
---              Err1 := Err1 - Absolute.Y;
---              Err2 := Err2 - Absolute.Z;
---              Ctx.Step (X_Axis, Dir_X);
---              if Err1 < 0.0 then
---                 Ctx.Step (Y_Axis, Dir_Y);
---                 Err1 := Err1 + Absolute.X;
---              end if;
---              if Err2 < 0.0 then
---                 Ctx.Step (Z_Axis, Dir_Z);
---                 Err2 := Err2 + Absolute.X;
---              end if;
---           end loop;
---        elsif Absolute.Y >= Absolute.Z and then Absolute.Y >=  Absolute.X
---        then
---           Err1 := Absolute.Y / 2.0;
---           Err2 := Absolute.Y / 2.0;
---
---           for Cnt in 0 .. Integer (Absolute.Y) - 1 loop
---              Err1 := Err1 - Absolute.X;
---              Err2 := Err2 - Absolute.Z;
---              Ctx.Step (Y_Axis, Dir_Y);
---              if Err1 < 0.0 then
---                 Ctx.Step (X_Axis, Dir_X);
---                 Err1 := Err1 + Absolute.Y;
---              end if;
---              if Err2 < 0.0 then
---                 Ctx.Step (Z_Axis, Dir_Z);
---                 Err2 := Err2 + Absolute.Y;
---              end if;
---           end loop;
---        else
---           Err1 := Absolute.Z / 2.0;
---           Err2 := Absolute.Z / 2.0;
---
---           for Cnt in 0 .. Integer (Absolute.Z) - 1 loop
---              Err1 := Err1 - Absolute.X;
---              Err2 := Err2 - Absolute.Y;
---              Ctx.Step (Z_Axis, Dir_Z);
---              if Err1 < 0.0 then
---                 Ctx.Step (X_Axis, Dir_X);
---                 Err1 := Err1 + Absolute.Z;
---              end if;
---              if Err2 < 0.0 then
---                 Ctx.Step (Y_Axis, Dir_Y);
---                 Err2 := Err2 + Absolute.Z;
---              end if;
---           end loop;
---        end if;
---
---        --  Make sure that we really go to the exact target position
---        while Ctx.Real_Position /= Cmd loop
---           Ctx.Put_Line ("Ctx.Real_Position " & Image (Ctx.Real_Position));
---           Ctx.Put_Line ("Cmd " & Image (Cmd));
---
---           Ctx.Put_Line ("Correction loop");
---           if Ctx.Real_Position.X < Cmd.X then
---              Ctx.Put_Line ("X Fwd");
---              Ctx.Step (X_Axis, Forward);
---           elsif Ctx.Real_Position.X > Cmd.X then
---              Ctx.Put_Line ("X Bwd");
---              Ctx.Step (X_Axis, Backward);
---           end if;
---           if Ctx.Real_Position.Y < Cmd.Y then
---              Ctx.Put_Line ("Y Fwd");
---              Ctx.Step (Y_Axis, Forward);
---           elsif Ctx.Real_Position.Y > Cmd.Y then
---              Ctx.Put_Line ("Y Bwd");
---              Ctx.Step (Y_Axis, Backward);
---           end if;
---           if Ctx.Real_Position.Z < Cmd.Z then
---              Ctx.Put_Line ("Z Fwd");
---              Ctx.Step (Z_Axis, Forward);
---           elsif Ctx.Real_Position.Z > Cmd.Z then
---              Ctx.Put_Line ("Z Bwd");
---              Ctx.Step (Z_Axis, Backward);
---           end if;
---        end loop;
---        Ctx.Put_Line ("End Of Move_To");
---        return;
---     end Planner_Add_Motion;
 
    -----------------------
    -- Planner_Add_Dwell --
@@ -278,10 +152,10 @@ package body Gcode.Planner is
    -- Get_Next_Segment --
    ----------------------
 
-   function Get_Next_Segment (Segment : out Segment_Block) return Boolean is
+   function Get_Next_Segment (Seg : out Segment) return Boolean is
    begin
       if not Segment_Block_Buffer.Empty then
-         Segment_Block_Buffer.Remove (Segment);
+         Segment_Block_Buffer.Remove (Seg);
          return True;
       else
          return False;
@@ -293,7 +167,7 @@ package body Gcode.Planner is
 
    task body Planner_Task is
       Motion : Motion_Block;
-      Segment : Segment_Block;
+      Seg : Segment;
       Remaining_Steps : Steps;
       Step_Per_Milli : Float_Value;
       pragma Unreferenced (Step_Per_Milli);
@@ -307,12 +181,9 @@ package body Gcode.Planner is
    begin
       loop
 
-         Put_Line ("Planner: Trying to get a new block");
          --  Blocking call
          Motion_Block_Buffer.Remove (Motion);
 
-         Put_Line ("Planner: Take new motion block (Step event:" &
-                     Motion.Step_Event_Count'Img & ")");
          case Motion.Kind is
             when Motion_Dwell =>
                --  Not implemented
@@ -327,26 +198,27 @@ package body Gcode.Planner is
                  Float_Value (Remaining_Steps) / Motion.Remaining_Distance;
 
                --  Signal this segment as first of the new block
-               Segment.New_Block := True;
+               Seg.New_Block := True;
+
+               --  Segment values that will remain for the entire block
+               Seg.Block_Steps := Motion.Relative_Steps;
+               Seg.Block_Event_Count := Motion.Step_Event_Count;
+               Seg.Directions := Motion.Directions;
                while Remaining_Steps > 0 loop
                   Seg_Time := Max_Segment_Time_Second;
 
                   --  Dummy block spliting until cleaver speed profile is
                   --  implemented...
-                  Segment.Step_Count := Steps'Min (Remaining_Steps, 500);
-                  Remaining_Steps := Remaining_Steps - Segment.Step_Count;
+                  Seg.Step_Count := Steps'Min (Remaining_Steps, 500);
+                  Remaining_Steps := Remaining_Steps - Seg.Step_Count;
 
-                  Segment.Directions := Motion.Directions;
-
-                  Put_Line ("Planner: Insert new segment");
                   --  Blocking call
-                  Segment_Block_Buffer.Insert (Segment);
+                  Segment_Block_Buffer.Insert (Seg);
 
                   --  Next segements are not first of the block
-                  Segment.New_Block := False;
+                  Seg.New_Block := False;
 
                end loop;
-               Put_Line ("Planner: End of Block procesing");
          end case;
       end loop;
    end Planner_Task;

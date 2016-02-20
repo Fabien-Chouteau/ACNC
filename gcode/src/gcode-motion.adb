@@ -1,4 +1,3 @@
-with Ada.Text_IO; use Ada.Text_IO;
 with Ada.Numerics; use Ada.Numerics;
 with Gcode.Planner;
 
@@ -17,8 +16,10 @@ package body Gcode.Motion is
       Feed_Rate : Step_Speed)
    is
    begin
-      Put_Line ("Move_Line to " & Image (Target));
       Gcode.Planner.Planner_Add_Motion (Ctx, Target, Feed_Rate);
+
+      --  Update virtual position
+      Ctx.Virt_Position := Target;
    end Move_Line;
 
    -----------------
@@ -34,18 +35,12 @@ package body Gcode.Motion is
       Feed_Rate   : Step_Speed)
    is
       Target : Float_Position;
-      Radius, Radius2 : Float_Value;
+      Radius : Float_Value;
       Travel, Angle, Cos_A, Sin_A : Float_Value;
       Divisions : Natural;
    begin
 
-      Ctx.Put_Line ("Circle_From " & Image (Start_Point));
-      Ctx.Put_Line ("Circle_To " & Image (End_Point));
-
       Radius := Distance (Offset, End_Point);
-      Ctx.Put_Line ("Radius: " & Image (Radius));
-      Radius2 := Distance (Offset, Start_Point);
-      Ctx.Put_Line ("Radius2: " & Image (Radius2));
 
       Travel := Arctan (End_Point (X_Axis) - Offset (X_Axis),
                         End_Point (Y_Axis) - Offset (Y_Axis))
@@ -60,7 +55,6 @@ package body Gcode.Motion is
          end if;
       end if;
 
-      Ctx.Put_Line ("Travel: " & Image (Travel));
       declare
          From : constant Float_Position := Start_Point - Offset;
          To   : constant Float_Position := End_Point - Offset;
@@ -83,12 +77,10 @@ package body Gcode.Motion is
          end if;
       end;
 
-      Divisions := Natural (abs Travel * Radius) * 2;
+      Divisions := Natural (abs Travel * Radius);
 
       --  Make sure we always have at least one division
       Divisions := Divisions + 1;
-
-      Ctx.Put_Line ("Division:" & Divisions'Img);
 
       Angle := Travel / Float_Value (Divisions);
       Cos_A := Cos (Angle);

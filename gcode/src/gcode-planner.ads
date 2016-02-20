@@ -17,15 +17,20 @@ package Gcode.Planner is
      (Ctx       : in out GContext'Class;
       Feed_Rate : Step_Speed);
 
-   type Segment_Block is record
+   type Segment is record
       New_Block  : Boolean;
       Step_Count : Steps;
 
       Directions       : Axis_Directions := (others => Forward);
       --  Step direction for each axis
 
+      Block_Steps : Step_Position;
+      --  Steps for the current Motion block each axis
+
+      Block_Event_Count : Steps;
+      --  Step count for the current block
    end record;
 
-   function Get_Next_Segment (Segment : out Segment_Block) return Boolean;
+   function Get_Next_Segment (Seg : out Segment) return Boolean;
 
 end Gcode.Planner;

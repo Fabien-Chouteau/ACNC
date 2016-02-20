@@ -17,7 +17,6 @@ with Gtk.Text_Buffer; use Gtk.Text_Buffer;
 with Gtk.Text_View; use Gtk.Text_View;
 with Gcode.Parser;
 with Gcode.Execution;
-with Ada.Containers.Doubly_Linked_Lists;
 with Gtk.Text_Iter; use Gtk.Text_Iter;
 with Gdk.Event;
 with Gdk.Types.Keysyms;
@@ -27,7 +26,7 @@ with Glib.Properties;
 with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
 --  with GNAT.Serial_Communications;
 with Gtk.Dialog; use Gtk.Dialog;
-with Stepper; use Stepper;
+with Machine_Motion_history; use Machine_Motion_history;
 
 package body Station_Gtk is
 
@@ -57,22 +56,14 @@ package body Station_Gtk is
    use type Step_Position;
    use type Gdk.Gdk_Window;
 
-   package Position_Container is
-     new Ada.Containers.Doubly_Linked_Lists (Step_Position);
-   use Position_Container;
-
-   History : Position_Container.List;
-   Current_Position : Step_Position := (others => 0);
-   Current_Direction : Axis_Directions := (others => Forward);
-
    overriding
    function Home (Ctx : in out GTK_CNC; Axis : Axis_Name) return Boolean is
    begin
       case Axis is
-         when X_Axis => return Ctx.Real_Position (X_Axis) <= 0;
-         when Y_Axis => return Ctx.Real_Position (Y_Axis) <= 0;
+         when X_Axis => return Current_Position (X_Axis) <= 0;
+         when Y_Axis => return Current_Position (Y_Axis) <= 0;
          when Z_Axis =>
-            return Ctx.Real_Position (Z_Axis) >=
+            return Current_Position (Z_Axis) >=
               Steps (Ctx.Step_Per_Millimeter (Z_Axis) * 2.0);
       end case;
    end Home;
@@ -162,22 +153,8 @@ package body Station_Gtk is
                  Height => Tool_Size);
       Cairo.Fill (Cr);
 
-      for Pos of History loop
-         if Pos (Z_Axis) > 0 then
-            Set_Source_Rgb (Cr, 0.0, 1.0, 0.0);
-         else
-            Set_Source_Rgb (Cr, 1.0, 0.0, 0.0);
-         end if;
---           Rectangle (Cr     => Cr,
---                      X      => Gdouble (Pos (X_Axis)) - 1.0 * (1.0 / Zoom),
---                      Y      => Gdouble (Pos (Y_Axis)) - 1.0 * (1.0 / Zoom),
---                      Width  => 2.0 * (1.0 / Zoom),
---                      Height => 2.0 * (1.0 / Zoom));
---           Cairo.Fill (Cr);
-         Line_To (Cr, Gdouble (Pos (X_Axis)), Gdouble (Pos (Y_Axis)));
+      Draw_History (Cr, Zoom);
 
-      end loop;
-      Cairo.Stroke (Cr);
       Cairo.Restore (Cr);
 
       return False;
@@ -240,8 +217,8 @@ package body Station_Gtk is
       Ctx.Log (Error, "Test error");
       Ctx.Log (Warning, "Test Warning");
       Ctx.Log (Board, "Test Board");
-      Ctx.Real_Position := (0, 0, 0);
-      History.Clear;
+      Ctx.Virt_Position := (0.0, 0.0, 0.0);
+      Clear_History;
       loop
          Text.Get_Iter_At_Line (Start_Iter, Line_Cnt);
          Text.Get_Iter_At_Line (End_Iter, Line_Cnt + 1);
@@ -522,49 +499,12 @@ package body Station_Gtk is
    end Put;
 
    ------------------
-   -- Set_Step_Pin --
-   ------------------
-
-   procedure Set_Step_Pin (Axis : Axis_Name) is
-      S : constant Steps :=
-        (if Current_Direction (Axis) = Forward then 1 else -1);
-   begin
-      Current_Position (Axis) := Current_Position (Axis) + S;
-
-      --  Do not Save Z_Axis
-      if Axis /= Z_Axis then
-         History.Append (Current_Position);
-      end if;
-   end Set_Step_Pin;
-
-   --------------------
-   -- Clear_Step_Pin --
-   --------------------
-
-   procedure Clear_Step_Pin (Axis : Axis_Name) is
-   begin
-      null;
-   end Clear_Step_Pin;
-
-   procedure Set_Step_Direction (Axis : Axis_Name;
-                                 Dir : Direction)
-   is
-   begin
-      Current_Direction (Axis) := Dir;
-   end Set_Step_Direction;
-
-   ------------------
    -- Stepper_Tick --
    ------------------
 
    function Stepper_Tick return Boolean is
    begin
-      Stepper.Execute_Step_Event;
       return True;
    end Stepper_Tick;
 
-begin
-   Stepper.Set_Stepper_Callbacks (Set_Step       => Set_Step_Pin'Access,
-                                  Clear_Step     => Clear_Step_Pin'Access,
-                                  Set_Direcetion => Set_Step_Direction'Access);
 end Station_Gtk;

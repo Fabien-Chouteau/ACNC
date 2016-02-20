@@ -29,11 +29,6 @@ package Station_Gtk is
    overriding
    procedure Put (Ctx : in out GTK_CNC; C : Character);
 
-   procedure Set_Step_Pin (Axis : Axis_Name);
-   procedure Clear_Step_Pin (Axis : Axis_Name);
-   procedure Set_Step_Direction (Axis : Axis_Name;
-                                 Dir : Direction);
-
    type Station_Gtk_Record is record
       Fwd          : Gtk_Button;
       Left         : Gtk_Button;

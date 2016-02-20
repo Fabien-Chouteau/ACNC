@@ -3,6 +3,8 @@ with Gcode.Error; use Gcode.Error;
 
 package body Gcode.Lexer is
 
+   function Eval_Number (Line : String; Tok : Token) return Float_Value;
+
    ------------
    -- Append --
    ------------
@@ -15,7 +17,7 @@ package body Gcode.Lexer is
       else
          raise Gcode_Exception with "Max token limit reached";
       end if;
-   end;
+   end Append;
 
    ------------
    -- Append --
@@ -61,7 +63,7 @@ package body Gcode.Lexer is
          Tokens.Tokens (After + 1) := Tok;
          Tokens.Last := Tokens.Last + 1;
       end if;
-   end;
+   end Insert;
 
    ---------
    -- Get --
@@ -73,7 +75,7 @@ package body Gcode.Lexer is
          return (0, 0, Unknown_Token, 0.0);
       end if;
       return Tokens.Tokens (Pos);
-   end;
+   end Get;
 
    ---------
    -- Pop --
@@ -87,7 +89,7 @@ package body Gcode.Lexer is
          Tokens.Last := Tokens.Last - 1;
          return Tokens.Tokens (Tokens.Last);
       end if;
-   end;
+   end Pop;
 
    ---------
    -- Pop --
@@ -98,7 +100,7 @@ package body Gcode.Lexer is
       if Tokens.Last > Token_Range'First then
          Tokens.Last := Tokens.Last - 1;
       end if;
-   end;
+   end Pop;
 
    ---------
    -- Top --
@@ -111,7 +113,7 @@ package body Gcode.Lexer is
       else
          return Tokens.Tokens (Tokens.Last - 1);
       end if;
-   end;
+   end Top;
 
    ---------------------
    -- Number_Of_Token --
@@ -120,7 +122,7 @@ package body Gcode.Lexer is
    function Number_Of_Token (Tokens : Token_List) return Natural is
    begin
       return Tokens.Last - 1;
-   end;
+   end Number_Of_Token;
 
    -----------
    -- Clear --
@@ -129,7 +131,7 @@ package body Gcode.Lexer is
    procedure Clear (Tokens : in out Token_List) is
    begin
       Tokens.Last := Token_Range'First;
-   end;
+   end Clear;
 
    -----------
    -- Print --
@@ -145,7 +147,7 @@ package body Gcode.Lexer is
          end loop;
          New_Line;
       end if;
-   end;
+   end Print;
 
    -----------
    -- Print --
@@ -175,7 +177,7 @@ package body Gcode.Lexer is
          end loop;
          New_Line;
       end if;
-   end;
+   end Print;
 
    -----------
    -- Print --
@@ -205,6 +207,8 @@ package body Gcode.Lexer is
 
    function Eval_Number (Line : String; Tok : Token) return Float_Value is
 
+      function Char_To_Float (C : Character) return Float_Value;
+
       -------------------
       -- Char_To_Float --
       -------------------
@@ -212,7 +216,8 @@ package body Gcode.Lexer is
       function Char_To_Float (C : Character) return Float_Value is
       begin
          return Float_Value (Character'Pos (C) - Character'Pos ('0'));
-      end;
+      end Char_To_Float;
+
       Ret : Float_Value := 0.0;
       Cnt : Natural := 0;
       Floating : Boolean := False;
@@ -260,15 +265,37 @@ package body Gcode.Lexer is
    is
       Cursor : Natural := Line'First;
 
+      function End_Of_Line return Boolean;
+      procedure Increment;
+      procedure Decrement;
+      procedure Tokenize_Param_Name;
+      procedure Tokenize_Number;
+      procedure Tokenize_Comment;
+      function Next_Char return Character;
+      function Current_Char return Character;
+
+      -----------------
+      -- End_Of_Line --
+      -----------------
+
       function End_Of_Line return Boolean is
       begin
          return Cursor not in Line'Range;
-      end;
+      end End_Of_Line;
+
+      ---------------
+      -- Increment --
+      ---------------
 
       procedure Increment is
       begin
          Cursor := Cursor + 1;
       end Increment;
+
+      ---------------
+      -- Decrement --
+      ---------------
+
       procedure Decrement is
       begin
          Cursor := Cursor - 1;
@@ -313,7 +340,7 @@ package body Gcode.Lexer is
          Tok.Tstart := Cursor;
          Tok.Ttype := Literal;
          while not End_Of_Line and then
-           (Line (Cursor) in '0' .. '9' or else Line (Cursor) = '.' )
+           (Line (Cursor) in '0' .. '9' or else Line (Cursor) = '.')
          loop
             Increment;
          end loop;
@@ -386,6 +413,7 @@ package body Gcode.Lexer is
             return Line (Cursor);
          end if;
       end Current_Char;
+
    begin
       while not End_Of_Line loop
          case Current_Char is
@@ -407,7 +435,8 @@ package body Gcode.Lexer is
             when '-' => Append (Tokens, Op_Minus, Cursor);
             when '(' | ';' =>  Tokenize_Comment;
             when ')' =>
-               Ctx.Report_Error (Line, "Unmatched right paren at " & Cursor'Img,
+               Ctx.Report_Error (Line,
+                                 "Unmatched right paren at " & Cursor'Img,
                                  Cursor, Cursor);
                return;
             when '*' =>
@@ -422,9 +451,9 @@ package body Gcode.Lexer is
             when others =>
                Ctx.Report_Error (Line, "Unknown Character '" & Line (Cursor) &
                                    "'", Cursor, Cursor);
-               return ;
+               return;
          end case;
          Increment;
       end loop;
-   end;
+   end Tokenize;
 end Gcode.Lexer;

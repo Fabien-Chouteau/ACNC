@@ -11,11 +11,17 @@ package body Gcode.Parser is
    -- Parse --
    -----------
 
-   function Parse (Line : string; Ctx : in out GContext'Class)
+   function Parse (Line : String; Ctx : in out GContext'Class)
                    return Boolean
    is
       Tokens : Token_List;
       Cur : Token_Range := Token_Range'First;
+
+      procedure Increment;
+      function Current return Token;
+      procedure Parse_Word;
+      procedure Parse_Line_Number;
+      procedure Parse_Param_Declaration;
 
       ---------------
       -- Increment --
@@ -120,9 +126,10 @@ package body Gcode.Parser is
          if not Error_Raised (Ctx) then
             case Param_Token.Ttype is
                when Param_Name => null;
-                  Define (Ctx.Params,
-                          Line (Param_Token.Tstart + 1 .. Param_Token.Tend - 1),
-                          Value);
+                  Define
+                    (Ctx.Params,
+                     Line (Param_Token.Tstart + 1 .. Param_Token.Tend - 1),
+                     Value);
                when Literal =>
                   Define (Ctx.Params, Parameter_Id (Param_Token.Value), Value);
                when others => null;
@@ -146,7 +153,7 @@ package body Gcode.Parser is
          when Comment => Increment;
          when others =>
             Raise_Error (Ctx,
-                         "Unexpected token " & Current.Ttype'Img &" at " &
+                         "Unexpected token " & Current.Ttype'Img & " at " &
                            Current.Tstart'Img);
          end case;
       end loop;

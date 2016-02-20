@@ -151,11 +151,12 @@
   <object class="GtkTextTagTable" id="texttagtable1"/>
   <object class="GtkTextBuffer" id="textbuffer">
     <property name="tag_table">texttagtable1</property>
-    <property name="text" translatable="yes">G00 Z5.000000
-G00 X3 Y3
-
-G00 X4 Y2
-G28
+    <property name="text" translatable="yes">G00 Z5
+G00 X20 Y30
+G00 Z0
+G02 X20 Y10 J-10
+G02 X20 Y20 J5
+G03 X20 Y30 J5
 </property>
   </object>
   <object class="GtkWindow" id="window1">

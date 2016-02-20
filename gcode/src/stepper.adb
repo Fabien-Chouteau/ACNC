@@ -15,7 +15,7 @@ package body Stepper is
       Has_Segment : Boolean := False;
       --  Does the stepper still has a segment to execute
 
-      Segment : Segment_Block;
+      Seg : Segment;
 
       Step_Count : Steps;
       Counter : Step_Position;
@@ -26,14 +26,20 @@ package body Stepper is
       Directions       : Axis_Directions := (others => Forward);
       --  Direction of steps for eaxh axis
 
+      Block_Steps : Step_Position;
+      --  Steps for the current Motion block each axis
+      Block_Event_Count : Steps;
+      --  Step count for the current block
 
       Set_Step_Callback : Set_Step_Pin_Proc := null;
       Clear_Step_Callback : Clear_Step_Pin_Proc := null;
       Set_Direction_Callback : Set_Direction_Pin_Proc := null;
 
+      Current_Position : Step_Position := (others => 0);
+      --  Keep track of the actuall position of the machine
    end record;
 
-   Stepper_Data : Stepper_Data_Type;
+   St_Data : Stepper_Data_Type;
 
    type Step_Timing_Event is new Timing_Event with record
       Do_Step : Do_Step_Array;
@@ -75,11 +81,11 @@ package body Stepper is
          Step_Pulse.Set_Event.Do_Step := Do_Step;
          Step_Pulse.Clear_Event.Do_Step := Do_Step;
 
-         if Stepper_Data.Set_Direction_Callback /= null then
+         if St_Data.Set_Direction_Callback /= null then
             --  Set direction pins now
             for Axis in Axis_Name loop
                --  Set_Direction pin
-               Stepper_Data.Set_Direction_Callback (Axis, Directions (Axis));
+               St_Data.Set_Direction_Callback (Axis, Directions (Axis));
             end loop;
          end if;
 
@@ -108,10 +114,10 @@ package body Stepper is
          Do_Step : constant Do_Step_Array :=
            Step_Timing_Event (Timing_Event'Class (Event)).Do_Step;
       begin
-         if Stepper_Data.Set_Step_Callback /= null then
+         if St_Data.Set_Step_Callback /= null then
             for Axis in Axis_Name loop
                if Do_Step (Axis) then
-                  Stepper_Data.Set_Step_Callback (Axis);
+                  St_Data.Set_Step_Callback (Axis);
                end if;
             end loop;
          end if;
@@ -125,60 +131,81 @@ package body Stepper is
          Do_Step : constant Do_Step_Array :=
            Step_Timing_Event (Timing_Event'Class (Event)).Do_Step;
       begin
-         if Stepper_Data.Set_Step_Callback /= null then
+         if St_Data.Set_Step_Callback /= null then
             for Axis in Axis_Name loop
                if Do_Step (Axis) then
-                  Stepper_Data.Clear_Step_Callback (Axis);
+                  St_Data.Clear_Step_Callback (Axis);
                end if;
             end loop;
          end if;
       end Clear_Step_Pins;
    end Step_Pulse;
 
-   procedure Execute_Step_Event is
+   function Execute_Step_Event return Boolean is
    begin
 
-      Step_Pulse.Start_Step_Cycle (Stepper_Data.Do_Step,
-                                   Stepper_Data.Directions);
+      Step_Pulse.Start_Step_Cycle (St_Data.Do_Step,
+                                   St_Data.Directions);
 
       --  Reset step instruction
-      Stepper_Data.Do_Step := (others => False);
+      St_Data.Do_Step := (others => False);
 
-      if not Stepper_Data.Has_Segment then
-         if Get_Next_Segment (Stepper_Data.Segment) then
+      if not St_Data.Has_Segment then
+         if Get_Next_Segment (St_Data.Seg) then
             Put_Line ("Taking new segment");
 
-            Stepper_Data.Has_Segment := True;
+            St_Data.Has_Segment := True;
             --  Process new segment
 
-            Stepper_Data.Step_Count := Stepper_Data.Segment.Step_Count;
-            Stepper_Data.Directions := Stepper_Data.Segment.Directions;
+            St_Data.Step_Count := St_Data.Seg.Step_Count;
+            St_Data.Directions := St_Data.Seg.Directions;
 
-            Put_Line ("Segment Step count:" & Stepper_Data.Step_Count'Img);
+            Put_Line ("Segment Step count:" & St_Data.Step_Count'Img);
 
-            if Stepper_Data.Segment.New_Block then
+            if St_Data.Seg.New_Block then
                --  This is the first segment of a new block
                Put_Line ("This is the first segment of a new block");
                --  Prep data for bresenham algorithm
-               for Axis in Axis_Name loop
-                  Stepper_Data.Counter (Axis) := 0;
-               end loop;
+               St_Data.Counter := (others => 0);
+               St_Data.Block_Steps := St_Data.Seg.Block_Steps;
+               St_Data.Block_Event_Count :=
+                 St_Data.Seg.Block_Event_Count;
 
             end if;
          else
             --  No segment to exectute
-            return;
+            return False;
          end if;
       end if;
 
-      --  TODO: Insert bresenham algorithm here...
-      Stepper_Data.Do_Step := (others => True);
+      --  Bresenham for each axis
+      for Axis in Axis_Name loop
+         St_Data.Counter (Axis) :=
+           St_Data.Counter (Axis) + St_Data.Block_Steps (Axis);
 
-      Stepper_Data.Step_Count := Stepper_Data.Step_Count - 1;
+         if St_Data.Counter (Axis) > St_Data.Block_Event_Count then
+            St_Data.Do_Step (Axis) := True;
+            St_Data.Counter (Axis) :=
+              St_Data.Counter (Axis) - St_Data.Block_Event_Count;
+            if St_Data.Directions (Axis) = Forward then
+               St_Data.Current_Position (Axis) :=
+                 St_Data.Current_Position (Axis) + 1;
+            else
+               St_Data.Current_Position (Axis) :=
+                 St_Data.Current_Position (Axis) + 1;
+            end if;
+         else
+            St_Data.Do_Step (Axis) := False;
+         end if;
+      end loop;
+
+      St_Data.Step_Count := St_Data.Step_Count - 1;
       --  Check end of segement
-      if Stepper_Data.Step_Count = 0 then
-         Stepper_Data.Has_Segment := False;
+      if St_Data.Step_Count = 0 then
+         St_Data.Has_Segment := False;
       end if;
+
+      return True;
    end Execute_Step_Event;
 
    ---------------------------
@@ -190,9 +217,9 @@ package body Stepper is
                                     Set_Direcetion : Set_Direction_Pin_Proc)
    is
    begin
-      Stepper_Data.Set_Step_Callback := Set_Step;
-      Stepper_Data.Clear_Step_Callback := Clear_Step;
-      Stepper_Data.Set_Direction_Callback := Set_Direcetion;
+      St_Data.Set_Step_Callback := Set_Step;
+      St_Data.Clear_Step_Callback := Clear_Step;
+      St_Data.Set_Direction_Callback := Set_Direcetion;
 
    end Set_Stepper_Callbacks;
 

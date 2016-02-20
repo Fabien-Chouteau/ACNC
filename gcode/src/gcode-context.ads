@@ -11,14 +11,14 @@ package Gcode.Context is
       Current_Feed_Rate : Step_Speed := 1.0;
       Error_Flag : Boolean := False;
       Step_Per_Millimeter : Float_Position := (100.0, 100.0, 100.0);
-      Real_Position : Step_Position;
-      Virt_Position : Step_Position;
+--        Real_Position : Step_Position;
+      Virt_Position : Float_Position;
    end record;
 
    function Home (Ctx : in out GContext; Axis : Axis_Name) return Boolean;
 
    procedure Report_Error (Ctx : in out GContext;
-                           Line, Msg : string;
+                           Line, Msg : String;
                            EStart, EEnd : Natural);
 
    function Step_To_Milli (Ctx : in out GContext; S : Step_Position)

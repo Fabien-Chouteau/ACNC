@@ -22,7 +22,7 @@ package body Gcode.Execution is
    procedure Line_Command (Ctx : in out GContext'Class;
                            Feed_Rate : Step_Speed)
    is
-      Target : Float_Position := Step_To_Milli (Ctx, Ctx.Real_Position);
+      Target : Float_Position := Ctx.Virt_Position;
    begin
       if Ctx.B ('X').Is_Set then
          Target (X_Axis) := Ctx.B ('X').Value;
@@ -66,7 +66,7 @@ package body Gcode.Execution is
          return;
       end if;
 
-      Start_Point := Step_To_Milli (Ctx, Ctx.Real_Position);
+      Start_Point := Ctx.Virt_Position;
       Center      := Start_Point;
       End_Point   := Start_Point;
 

@@ -1,7 +1,7 @@
 with Gcode; use Gcode;
 
 package Stepper is
-   procedure Execute_Step_Event;
+   function Execute_Step_Event return Boolean;
 
    type Set_Step_Pin_Proc is access procedure (Axis : Axis_Name);
    type Clear_Step_Pin_Proc is access procedure (Axis : Axis_Name);

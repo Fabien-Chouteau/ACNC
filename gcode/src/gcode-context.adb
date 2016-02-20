@@ -16,7 +16,7 @@ package body Gcode.Context is
          Ret (Axis) := Float_Value (S (Axis)) / Ctx.Step_Per_Millimeter (Axis);
       end loop;
       return Ret;
-   end;
+   end Step_To_Milli;
 
    -------------------
    -- Milli_To_Step --
@@ -31,7 +31,7 @@ package body Gcode.Context is
          Ret (Axis) := Steps (S (Axis) * Ctx.Step_Per_Millimeter (Axis));
       end loop;
       return Ret;
-   end;
+   end Milli_To_Step;
 
    -------------------
    -- Inch_To_Milli --
@@ -44,7 +44,7 @@ package body Gcode.Context is
          Ret (Axis) := Inch_To_Milli (S (Axis));
       end loop;
       return Ret;
-   end;
+   end Inch_To_Milli;
 
    -------------------
    -- Inch_To_Milli --
@@ -53,7 +53,7 @@ package body Gcode.Context is
    function Inch_To_Milli (S : Float_Value) return Float_Value is
    begin
       return S * 25.4;
-   end;
+   end Inch_To_Milli;
 
    -----------------
    -- Raise_Error --
@@ -63,7 +63,7 @@ package body Gcode.Context is
    begin
       Ctx.Error_Flag := True;
       raise Gcode_Exception with Msg;
-   end;
+   end Raise_Error;
 
    -----------------
    -- Clear_Error --
@@ -72,7 +72,7 @@ package body Gcode.Context is
    procedure Clear_Error (Ctx : in out GContext) is
    begin
       Ctx.Error_Flag := False;
-   end;
+   end Clear_Error;
 
    ------------------
    -- Error_Raised --
@@ -81,7 +81,7 @@ package body Gcode.Context is
    function Error_Raised (Ctx : in out GContext) return Boolean is
    begin
       return Ctx.Error_Flag;
-   end;
+   end Error_Raised;
 
    ----------
    -- Home --
@@ -92,24 +92,14 @@ package body Gcode.Context is
       pragma Unreferenced (Axis, Ctx);
    begin
       return False;
-   end;
-
-   ----------
-   -- Step --
-   ----------
-
-   procedure Step (Ctx : in out GContext; Axis : Axis_Name; Dir : Direction) is
-      S : constant Steps := (if Dir = Forward then 1 else -1);
-   begin
-      Ctx.Real_Position (Axis) := Ctx.Real_Position (Axis) + S;
-   end Step;
+   end Home;
 
    ------------------
    -- Report_Error --
    ------------------
 
    procedure Report_Error (Ctx : in out GContext;
-                           Line, Msg : string;
+                           Line, Msg : String;
                            EStart, EEnd : Natural) is
    begin
       Ctx.Error_Flag := True;
