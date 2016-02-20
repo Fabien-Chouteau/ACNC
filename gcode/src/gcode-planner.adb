@@ -1,5 +1,6 @@
 with Bounded_Buffers_Blocking_Consumer;
 with Bounded_Buffers_Blocking_Producer;
+with Ada.Real_Time; use Ada.Real_Time;
 with System;
 
 package body Gcode.Planner is
@@ -180,6 +181,7 @@ package body Gcode.Planner is
       Seg_Time : Float_Value;
       pragma Unreferenced (Seg_Time);
    begin
+      delay until Time_Last;
       loop
 
          --  Blocking call

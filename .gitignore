@@ -2,6 +2,8 @@
 *.o
 *.exe
 *.cgpr
-
+*#
+*.db
+*-loc.xml
 # Ada Library Information
 *.ali

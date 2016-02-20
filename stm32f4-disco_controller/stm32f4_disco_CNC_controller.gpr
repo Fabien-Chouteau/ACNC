@@ -1,0 +1,17 @@
+with "drivers/boards/stm32f4_discovery/stm32f4_discovery.gpr";
+with "../gcode/gcode";
+
+project STM32F4_DISCO_CNC_Controller is
+
+   for Languages use ("Ada");
+   for Source_Dirs use ("src");
+   for Object_Dir use "obj";
+   for Target use "arm-eabi";
+   for Runtime ("ada") use "ravenscar-full-stm32f4";
+   for Main use ("main.adb");
+
+   type LOADER_Type is ("RAM", "ROM");
+   LOADER : LOADER_Type := external ("LOADER", "ROM");
+
+end STM32F4_DISCO_CNC_Controller;
+
