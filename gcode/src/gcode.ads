@@ -5,6 +5,7 @@ package Gcode is
 
    subtype Float_Value is Float;
    subtype Line_Value is Natural;
+   subtype Frequency_Value is Duration;
 
    package Float_Functions is new
      Ada.Numerics.Generic_Elementary_Functions (Float_Value);

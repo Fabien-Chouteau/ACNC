@@ -2,10 +2,18 @@ with Ada.Real_Time; use Ada.Real_Time;
 with Ada.Real_Time.Timing_Events; use Ada.Real_Time.Timing_Events;
 with Gcode.Planner; use Gcode.Planner;
 with System;
+with Settings;
 
 package body Stepper is
 
    type Do_Step_Array is array (Axis_Name) of Boolean;
+
+   procedure Dummy_Set_Step_Pin (Axis : Axis_Name) is null;
+   procedure Dummy_Clear_Step_Pin  (Axis : Axis_Name) is null;
+   procedure Dummy_Set_Direction_Pin (Axis : Axis_Name;
+                                      Dir : Direction) is null;
+   procedure Dummy_Set_Stepper_Frequency (Freq_Hz : Frequency_Value) is null;
+
 
    type Stepper_Data_Type is record
       Has_Segment : Boolean := False;
@@ -27,9 +35,10 @@ package body Stepper is
       Block_Event_Count : Steps;
       --  Step count for the current block
 
-      Set_Step_Callback : Set_Step_Pin_Proc := null;
-      Clear_Step_Callback : Clear_Step_Pin_Proc := null;
-      Set_Direction_Callback : Set_Direction_Pin_Proc := null;
+      Set_Step_Callback : Set_Step_Pin_Proc := Dummy_Set_Step_Pin'Access;
+      Clear_Step_Callback : Clear_Step_Pin_Proc := Dummy_Clear_Step_Pin'Access;
+      Set_Direction_Callback : Set_Direction_Pin_Proc := Dummy_Set_Direction_Pin'Access;
+      Set_Stepper_Frequency_Callback : Set_Stepper_Frequency_Proc := Dummy_Set_Stepper_Frequency'Access;
 
       Current_Position : Step_Position := (others => 0);
       --  Keep track of the actuall position of the machine
@@ -79,13 +88,11 @@ package body Stepper is
          Step_Pulse.Set_Event.Do_Step := Do_Step;
          Step_Pulse.Clear_Event.Do_Step := Do_Step;
 
-         if St_Data.Set_Direction_Callback /= null then
-            --  Set direction pins now
-            for Axis in Axis_Name loop
-               --  Set_Direction pin
-               St_Data.Set_Direction_Callback (Axis, Directions (Axis));
-            end loop;
-         end if;
+         --  Set direction pins now
+         for Axis in Axis_Name loop
+            --  Set_Direction pin
+            St_Data.Set_Direction_Callback (Axis, Directions (Axis));
+         end loop;
 
          Now := Clock;
 
@@ -119,13 +126,11 @@ package body Stepper is
          Do_Step : constant Do_Step_Array :=
            Step_Timing_Event (Timing_Event'Class (Event)).Do_Step;
       begin
-         if St_Data.Set_Step_Callback /= null then
-            for Axis in Axis_Name loop
-               if Do_Step (Axis) then
-                  St_Data.Set_Step_Callback (Axis);
-               end if;
-            end loop;
-         end if;
+         for Axis in Axis_Name loop
+            if Do_Step (Axis) then
+               St_Data.Set_Step_Callback (Axis);
+            end if;
+         end loop;
       end Set_Step_Pins;
 
       ---------------------
@@ -136,13 +141,11 @@ package body Stepper is
          Do_Step : constant Do_Step_Array :=
            Step_Timing_Event (Timing_Event'Class (Event)).Do_Step;
       begin
-         if St_Data.Set_Step_Callback /= null then
-            for Axis in Axis_Name loop
-               if Do_Step (Axis) then
-                  St_Data.Clear_Step_Callback (Axis);
-               end if;
-            end loop;
-         end if;
+         for Axis in Axis_Name loop
+            if Do_Step (Axis) then
+               St_Data.Clear_Step_Callback (Axis);
+            end if;
+         end loop;
       end Clear_Step_Pins;
    end Step_Pulse;
 
@@ -163,6 +166,9 @@ package body Stepper is
             St_Data.Step_Count := St_Data.Seg.Step_Count;
             St_Data.Directions := St_Data.Seg.Directions;
 
+            --  Set frequency for this segment
+            St_Data.Set_Stepper_Frequency_Callback (St_Data.Seg.Frequency);
+
             if St_Data.Seg.New_Block then
                --  This is the first segment of a new block
 
@@ -175,6 +181,8 @@ package body Stepper is
             end if;
          else
             --  No segment to exectute
+            St_Data.Set_Stepper_Frequency_Callback
+              (Settings.Idle_Stepper_Frequency);
             return False;
          end if;
       end if;
@@ -213,14 +221,17 @@ package body Stepper is
    -- Set_Stepper_Callbacks --
    ---------------------------
 
-   procedure Set_Stepper_Callbacks (Set_Step       : Set_Step_Pin_Proc;
-                                    Clear_Step     : Clear_Step_Pin_Proc;
-                                    Set_Direcetion : Set_Direction_Pin_Proc)
+   procedure Set_Stepper_Callbacks
+     (Set_Step              : Set_Step_Pin_Proc;
+      Clear_Step            : Clear_Step_Pin_Proc;
+      Set_Direcetion        : Set_Direction_Pin_Proc;
+      Set_Stepper_Frequency : Set_Stepper_Frequency_Proc)
    is
    begin
       St_Data.Set_Step_Callback := Set_Step;
       St_Data.Clear_Step_Callback := Clear_Step;
       St_Data.Set_Direction_Callback := Set_Direcetion;
+      St_Data.Set_Stepper_Frequency_Callback := Set_Stepper_Frequency;
    end Set_Stepper_Callbacks;
 
 end Stepper;

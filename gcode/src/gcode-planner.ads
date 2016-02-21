@@ -21,7 +21,10 @@ package Gcode.Planner is
       New_Block  : Boolean;
       Step_Count : Steps;
 
-      Directions       : Axis_Directions := (others => Forward);
+      Frequency : Frequency_Value;
+      --  Requested stepper frequency for this segment
+
+      Directions : Axis_Directions := (others => Forward);
       --  Step direction for each axis
 
       Block_Steps : Step_Position;

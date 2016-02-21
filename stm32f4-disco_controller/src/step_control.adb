@@ -2,17 +2,20 @@ with Ada.Synchronous_Task_Control;
 with Ada.Real_Time; use Ada.Real_Time;
 with Stepper;
 with System;
+with Settings;
 
 package body Step_Control is
 
-   Task_Sync : Ada.Synchronous_Task_Control.Suspension_Object;
+   Task_Sync   : Ada.Synchronous_Task_Control.Suspension_Object;
    Current_Pos : Step_Position := (others => 0);
    Current_Dir : Axis_Directions := (others => Forward);
+   Task_Period : Time_Span := Milliseconds (500);
 
    procedure Set_Step_Direction (Axis : Axis_Name;
                                  Dir : Direction);
    procedure Clear_Step_Pin (Axis : Axis_Name);
    procedure Set_Step_Pin (Axis : Axis_Name);
+   procedure Set_Stepper_Frequency (Freq_Hz : Frequency_Value);
 
    ---------------
    -- Initalize --
@@ -48,10 +51,7 @@ package body Step_Control is
       Configure_IO (Analysis_Point, Config => Configuration);
       Clear (Analysis_Point);
 
-      Stepper.Set_Stepper_Callbacks
-        (Set_Step       => Set_Step_Pin'Access,
-         Clear_Step     => Clear_Step_Pin'Access,
-         Set_Direcetion => Set_Step_Direction'Access);
+      Set_Stepper_Frequency (Settings.Idle_Stepper_Frequency);
 
       --  Release stepper task
       Ada.Synchronous_Task_Control.Set_True (Task_Sync);
@@ -91,6 +91,15 @@ package body Step_Control is
       Set (Step_GPIO (Axis));
    end Set_Step_Pin;
 
+   ---------------------------
+   -- Set_Stepper_Frequency --
+   ---------------------------
+
+   procedure Set_Stepper_Frequency (Freq_Hz : Frequency_Value) is
+   begin
+      Task_Period := To_Time_Span (1.0 / Freq_Hz);
+   end Set_Stepper_Frequency;
+
    ---------------
    -- Step_Task --
    ---------------
@@ -101,9 +110,14 @@ package body Step_Control is
 
    task body Step_Task is
       Next_Period : Time := Clock;
-      Task_Period : constant Time_Span := Milliseconds (1);
    begin
       Ada.Synchronous_Task_Control.Suspend_Until_True (Task_Sync);
+
+      Stepper.Set_Stepper_Callbacks
+        (Set_Step       => Set_Step_Pin'Access,
+         Clear_Step     => Clear_Step_Pin'Access,
+         Set_Direcetion => Set_Step_Direction'Access,
+         Set_Stepper_Frequency => Set_Stepper_Frequency'Access);
 
       loop
          Next_Period := Next_Period + Task_Period;
