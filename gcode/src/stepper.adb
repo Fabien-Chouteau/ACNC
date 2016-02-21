@@ -35,10 +35,17 @@ package body Stepper is
       Block_Event_Count : Steps;
       --  Step count for the current block
 
-      Set_Step_Callback : Set_Step_Pin_Proc := Dummy_Set_Step_Pin'Access;
-      Clear_Step_Callback : Clear_Step_Pin_Proc := Dummy_Clear_Step_Pin'Access;
-      Set_Direction_Callback : Set_Direction_Pin_Proc := Dummy_Set_Direction_Pin'Access;
-      Set_Stepper_Frequency_Callback : Set_Stepper_Frequency_Proc := Dummy_Set_Stepper_Frequency'Access;
+      Set_Step_Callback : Set_Step_Pin_Proc :=
+        Dummy_Set_Step_Pin'Access;
+
+      Clear_Step_Callback : Clear_Step_Pin_Proc :=
+        Dummy_Clear_Step_Pin'Access;
+
+      Set_Direction_Callback : Set_Direction_Pin_Proc :=
+        Dummy_Set_Direction_Pin'Access;
+
+      Set_Stepper_Frequency_Callback : Set_Stepper_Frequency_Proc :=
+        Dummy_Set_Stepper_Frequency'Access;
 
       Current_Position : Step_Position := (others => 0);
       --  Keep track of the actuall position of the machine
@@ -64,15 +71,6 @@ package body Stepper is
    private
       Set_Event   : Step_Timing_Event;
       Clear_Event : Step_Timing_Event;
-
-      --  Step pins timming
-      --    Direction delay   Step delay
-      --  |-----------------|------------|
-      --  ^                 ^            ^
-      --  Set  direction    Set step     Clear step
-
-      Direction_Delay : Time_Span := Microseconds (5);
-      Step_Delay      : Time_Span := Microseconds (5);
    end Step_Pulse;
 
    protected body Step_Pulse is
@@ -84,6 +82,11 @@ package body Stepper is
                                   Directions  : Axis_Directions)
       is
          Now : Time;
+         Direction_Delay : constant Time_Span :=
+           Settings.Direction_Pulse_Delay;
+
+         Step_Delay      : constant Time_Span :=
+           Settings.Step_Pulse_Duration;
       begin
          Step_Pulse.Set_Event.Do_Step := Do_Step;
          Step_Pulse.Clear_Event.Do_Step := Do_Step;

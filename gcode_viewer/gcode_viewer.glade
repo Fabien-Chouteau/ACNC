@@ -156,6 +156,7 @@ G00 X20 Y30
 G00 Z0
 G02 X20 Y10 J-10
 G02 X20 Y20 J5
+G04 P2 ; Dwell 2s
 G03 X20 Y30 J5
 </property>
   </object>

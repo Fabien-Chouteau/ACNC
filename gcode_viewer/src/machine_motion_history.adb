@@ -1,5 +1,7 @@
+with Ada.Real_Time; use Ada.Real_Time;
 with Ada.Containers.Doubly_Linked_Lists;
 with Stepper; use Stepper;
+with Settings;
 
 package body Machine_Motion_history is
 
@@ -13,6 +15,9 @@ package body Machine_Motion_history is
                                  Dir : Direction);
    procedure Clear_Step_Pin (Axis : Axis_Name);
    procedure Set_Step_Pin (Axis : Axis_Name);
+   procedure Set_Stepper_Frequency (Freq_Hz : Frequency_Value);
+
+   Task_Period : Time_Span := Milliseconds (500);
 
    -----------------
    -- Machine_Sim --
@@ -141,6 +146,11 @@ package body Machine_Motion_history is
       Machine_Sim.Set_Step_Direction (Axis, Dir);
    end Set_Step_Direction;
 
+   procedure Set_Stepper_Frequency (Freq_Hz : Frequency_Value) is
+   begin
+      Task_Period := To_Time_Span (1.0 / Freq_Hz);
+   end Set_Stepper_Frequency;
+
    ----------------------
    -- Current_Position --
    ----------------------
@@ -170,20 +180,26 @@ package body Machine_Motion_history is
    end Stepper_Sim;
 
    task body Stepper_Sim is
+      Next_Period : Time := Clock;
    begin
       loop
-         --  Run as fast as possible until there's no more segments
-         while Stepper.Execute_Step_Event loop
-            null;
-         end loop;
+         Next_Period := Next_Period + Task_Period;
 
-         delay 0.1;
+         if Stepper.Execute_Step_Event then
+            null;
+         end if;
+
+         delay until Next_Period;
       end loop;
    end Stepper_Sim;
 
 begin
-   Stepper.Set_Stepper_Callbacks (Set_Step       => Set_Step_Pin'Access,
-                                  Clear_Step     => Clear_Step_Pin'Access,
-                                  Set_Direcetion => Set_Step_Direction'Access);
+   Set_Stepper_Frequency (Settings.Idle_Stepper_Frequency);
+
+   Stepper.Set_Stepper_Callbacks
+     (Set_Step       => Set_Step_Pin'Access,
+      Clear_Step     => Clear_Step_Pin'Access,
+      Set_Direcetion => Set_Step_Direction'Access,
+      Set_Stepper_Frequency => Set_Stepper_Frequency'Access);
 
 end Machine_Motion_history;
