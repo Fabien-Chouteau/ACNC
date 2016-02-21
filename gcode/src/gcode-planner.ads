@@ -10,8 +10,8 @@ package Gcode.Planner is
       Feed_Rate : Step_Speed);
 
    procedure Planner_Add_Dwell
-     (Ctx       : in out GContext'Class;
-      Duration  : Float_Value);
+     (Ctx             : in out GContext'Class;
+      Dwell_Duration  : Duration);
 
    procedure Planner_Add_Homing
      (Ctx       : in out GContext'Class;

@@ -1,6 +1,7 @@
 with Bounded_Buffers_Blocking_Consumer;
 with Bounded_Buffers_Blocking_Producer;
 with System;
+with Settings;
 
 package body Gcode.Planner is
 
@@ -15,7 +16,7 @@ package body Gcode.Planner is
    type Motion_Block is record
       Kind             : Motion_Kind;
       Target           : Float_Position;
-      Dwell_Duration   : Float_Value;
+      Dwell_Duration   : Duration;
 
       Relative_Steps   : Step_Position;
       --  Steps for each axis
@@ -123,14 +124,14 @@ package body Gcode.Planner is
    -----------------------
 
    procedure Planner_Add_Dwell
-     (Ctx       : in out GContext'Class;
-      Duration  : Float_Value)
+     (Ctx            : in out GContext'Class;
+      Dwell_Duration : Duration)
    is
       pragma Unreferenced (Ctx);
       M_Block : Motion_Block;
    begin
       M_Block.Kind := Motion_Dwell;
-      M_Block.Dwell_Duration := Duration;
+      M_Block.Dwell_Duration := Dwell_Duration;
       Wait_And_Add_Motion (M_Block);
    end Planner_Add_Dwell;
 
@@ -188,8 +189,22 @@ package body Gcode.Planner is
 
          case Motion.Kind is
             when Motion_Dwell =>
-               --  Not implemented
-               raise Program_Error;
+               Seg.New_Block := True;
+
+               --  100Hz gives us a 10ms precision
+               Seg.Frequency :=
+                 Duration'Max (100.0, Settings.Idle_Stepper_Frequency);
+
+               Seg.Step_Count :=
+                 Steps (Motion.Dwell_Duration * Seg.Frequency);
+
+               --  No axis is moving
+               Seg.Block_Steps := (others => 0);
+               Seg.Block_Event_Count := Steps'Last;
+
+               --  Blocking call
+               Segment_Block_Buffer.Insert (Seg);
+
             when Motion_Homing =>
                --  Not implemented
                raise Program_Error;

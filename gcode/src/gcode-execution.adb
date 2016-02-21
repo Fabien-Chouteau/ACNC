@@ -14,6 +14,7 @@ package body Gcode.Execution is
       Feed_Rate : Step_Speed);
    procedure Return_To_Home (Ctx : in out GContext'Class;
                              Feed_Rate : Step_Speed);
+   procedure Dwell_Command (Ctx : in out GContext'Class);
 
    ------------------
    -- Line_Command --
@@ -121,6 +122,20 @@ package body Gcode.Execution is
                                         Feed_Rate => Feed_Rate);
    end Return_To_Home;
 
+   -------------------
+   -- Dwell_Command --
+   -------------------
+
+   procedure Dwell_Command (Ctx : in out GContext'Class) is
+   begin
+      if not Ctx.B ('P').Is_Set then
+         Ctx.Report_Error ("", "P required in dwell command", 0, 0);
+         return;
+      end if;
+
+      Planner.Planner_Add_Dwell (Ctx, Duration (Ctx.B ('P').Value));
+   end Dwell_Command;
+
    -------------
    -- Execute --
    -------------
@@ -168,6 +183,8 @@ package body Gcode.Execution is
                Circle_Command (Ctx, Gcode.Motion.Clockwise, Feed);
             when 3 =>
                Circle_Command (Ctx, Gcode.Motion.Counter_Clockwise, Feed);
+            when 4 =>
+               Dwell_Command (Ctx);
             when 20 => Ctx.Unit := Inches;
             when 21 => Ctx.Unit := Millimeters;
             when 28 => Return_To_Home (Ctx, Feed);
