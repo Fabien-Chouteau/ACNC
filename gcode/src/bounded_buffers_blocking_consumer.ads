@@ -47,7 +47,7 @@ generic
    --  Objects of type Bounded_Buffer specify the maximum number of Element
    --  values they can hold via the discriminant Capacity.
 
-   Ceiling : System.Priority;
+   Ceiling : System.Any_Priority;
    --  Users must specify the ceiling priority for the object. If the
    --  Real-Time Systems Annex is not in use this value is not important.
 

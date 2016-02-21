@@ -1,11 +1,7 @@
 with Ada.Real_Time; use Ada.Real_Time;
 with Ada.Real_Time.Timing_Events; use Ada.Real_Time.Timing_Events;
 with Gcode.Planner; use Gcode.Planner;
-with Ada.Text_IO; use Ada.Text_IO;
-
--------------
--- Stepper --
--------------
+with System;
 
 package body Stepper is
 
@@ -50,6 +46,8 @@ package body Stepper is
    ----------------
 
    protected Step_Pulse is
+      pragma Priority (System.Interrupt_Priority'Last);
+
       procedure Start_Step_Cycle (Do_Step : Do_Step_Array;
                                   Directions  : Axis_Directions);
       procedure Set_Step_Pins (Event : in out Timing_Event);
@@ -62,10 +60,10 @@ package body Stepper is
       --    Direction delay   Step delay
       --  |-----------------|------------|
       --  ^                 ^            ^
-      --  Set  direction    Set step     Reset step
+      --  Set  direction    Set step     Clear step
 
-      Direction_Delay : Time_Span := Microseconds (0);
-      Step_Delay      : Time_Span := Microseconds (0);
+      Direction_Delay : Time_Span := Microseconds (5);
+      Step_Delay      : Time_Span := Microseconds (5);
    end Step_Pulse;
 
    protected body Step_Pulse is
@@ -92,14 +90,21 @@ package body Stepper is
          Now := Clock;
 
          if Direction_Delay = Microseconds (0) then
-            --  Set and clear step pins imediatly
+            --  Set step pins imediatly
             Set_Step_Pins (Timing_Event (Set_Event));
-            Clear_Step_Pins (Timing_Event (Clear_Event));
          else
             --  Schedule the timming evnet that will set the step pins
             Set_Handler (Set_Event, Now + Direction_Delay,
                          Set_Step_Pins'Access);
+         end if;
 
+         if Direction_Delay = Microseconds (0)
+           and then
+             Step_Delay = Microseconds (0)
+         then
+            --  Clear step pins imediatly
+            Clear_Step_Pins (Timing_Event (Clear_Event));
+         else
             --  Schedule the timming evnet that will clear the step pins
             Set_Handler (Clear_Event,  Now + Direction_Delay + Step_Delay,
                          Clear_Step_Pins'Access);
@@ -152,19 +157,15 @@ package body Stepper is
 
       if not St_Data.Has_Segment then
          if Get_Next_Segment (St_Data.Seg) then
-            Put_Line ("Taking new segment");
-
             St_Data.Has_Segment := True;
             --  Process new segment
 
             St_Data.Step_Count := St_Data.Seg.Step_Count;
             St_Data.Directions := St_Data.Seg.Directions;
 
-            Put_Line ("Segment Step count:" & St_Data.Step_Count'Img);
-
             if St_Data.Seg.New_Block then
                --  This is the first segment of a new block
-               Put_Line ("This is the first segment of a new block");
+
                --  Prep data for bresenham algorithm
                St_Data.Counter := (others => 0);
                St_Data.Block_Steps := St_Data.Seg.Block_Steps;
@@ -220,7 +221,6 @@ package body Stepper is
       St_Data.Set_Step_Callback := Set_Step;
       St_Data.Clear_Step_Callback := Clear_Step;
       St_Data.Set_Direction_Callback := Set_Direcetion;
-
    end Set_Stepper_Callbacks;
 
 end Stepper;

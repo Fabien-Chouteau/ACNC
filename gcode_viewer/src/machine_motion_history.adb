@@ -9,6 +9,11 @@ package body Machine_Motion_history is
      new Ada.Containers.Doubly_Linked_Lists (Step_Position);
    use Position_Container;
 
+   procedure Set_Step_Direction (Axis : Axis_Name;
+                                 Dir : Direction);
+   procedure Clear_Step_Pin (Axis : Axis_Name);
+   procedure Set_Step_Pin (Axis : Axis_Name);
+
    -----------------
    -- Machine_Sim --
    -----------------

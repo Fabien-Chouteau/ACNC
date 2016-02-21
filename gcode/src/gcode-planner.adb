@@ -1,6 +1,5 @@
 with Bounded_Buffers_Blocking_Consumer;
 with Bounded_Buffers_Blocking_Producer;
-with Ada.Real_Time; use Ada.Real_Time;
 with System;
 
 package body Gcode.Planner is
@@ -35,10 +34,10 @@ package body Gcode.Planner is
 
    package Motion_Buffer_Package is
      new Bounded_Buffers_Blocking_Consumer (Motion_Block, 128,
-                                            System.Default_Priority);
+                                            System.Default_Priority + 1);
    package Segment_Buffer_Package is
      new Bounded_Buffers_Blocking_Producer (Segment, 64,
-                                            System.Default_Priority);
+                                            System.Default_Priority + 2);
 
    Motion_Block_Buffer : Motion_Buffer_Package.Bounded_Buffer;
    Segment_Block_Buffer : Segment_Buffer_Package.Bounded_Buffer;
@@ -165,6 +164,7 @@ package body Gcode.Planner is
    end Get_Next_Segment;
 
    task Planner_Task is
+      pragma Priority (System.Default_Priority + 1);
    end Planner_Task;
 
    task body Planner_Task is
@@ -181,7 +181,6 @@ package body Gcode.Planner is
       Seg_Time : Float_Value;
       pragma Unreferenced (Seg_Time);
    begin
-      delay until Time_Last;
       loop
 
          --  Blocking call

@@ -1,4 +1,5 @@
 with Gcode_Controller;
+with Step_Control;
 with Coms;
 with Interfaces.C;
 
@@ -9,13 +10,14 @@ procedure Main is
    Index : Buffer_Range := Buffer_Range'First;
 begin
    Gcode_Controller.Initalize;
+   Step_Control.Initalize;
    Coms.Initalize;
    loop
       Coms.UART_Get_Data_Blocking (C);
       Buffer (Index) := C;
       if C = ASCII.CR then
          Coms.UART_Send_DMA_Data_Blocking
-           ("executing...: '" & Buffer (1 .. Index - 1) & "'" &
+           ("executing: '" & Buffer (1 .. Index - 1) & "'" &
               ASCII.CR & ASCII.LF);
          Gcode_Controller.Execute (Buffer (1 .. Index - 1));
          Index := Buffer_Range'First;
