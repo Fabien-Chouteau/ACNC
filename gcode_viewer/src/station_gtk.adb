@@ -4,8 +4,6 @@ with Gtk.Handlers;
 with Gtk.Window;
 with Cairo; use Cairo;
 with Gtk.Widget; use Gtk.Widget;
-with Ada.Numerics.Generic_Elementary_Functions;
-with Ada.Numerics; use Ada.Numerics;
 with Glib.Object; use Glib.Object;
 with Gdk.Window; use Gdk.Window;
 with Gtk.Enums; use Gtk.Enums;
@@ -18,8 +16,6 @@ with Gtk.Text_View; use Gtk.Text_View;
 with Gcode.Parser;
 with Gcode.Execution;
 with Gtk.Text_Iter; use Gtk.Text_Iter;
-with Gdk.Event;
-with Gdk.Types.Keysyms;
 with Gtk.Text_Tag; use Gtk.Text_Tag;
 with Gdk.RGBA; use Gdk.RGBA;
 with Glib.Properties;
@@ -40,8 +36,9 @@ package body Station_Gtk is
    Text_View   : Gtk_Text_View := null;
    Log_View    : Gtk_Text_View := null;
    pragma Unreferenced (Log_View);
-   Zoom        : Gdouble := 0.19;
-   View_X, View_Y : Gdouble := -2000.0;
+   Zoom        : constant Gdouble := 0.19;
+   View_X : constant Gdouble := -2000.0;
+   View_Y : constant Gdouble := -2000.0;
    Serial_Dialog : Gtk_Dialog;
    Serial_Name, Serial_Baud : Gtk_Combo_Box_Text;
    Execute_Menu : Gtk_Image_Menu_Item;
@@ -71,10 +68,6 @@ package body Station_Gtk is
       Ctx.Error_Flag := True;
       Error_Msg := To_Unbounded_String (Msg);
    end Report_Error;
-
-   package Gdouble_Functions is new
-     Ada.Numerics.Generic_Elementary_Functions (Gdouble);
-   use Gdouble_Functions;
 
    package Event_Cb is new Gtk.Handlers.Return_Callback
      (Gtk_Drawing_Area_Record, Boolean);
@@ -239,9 +232,9 @@ package body Station_Gtk is
       return True;
    end Simulate_Handler;
 
-   -------------------
-   --  Pref_Handler --
-   -------------------
+   ---------------------
+   -- Connect_Handler --
+   ---------------------
 
    function Connect_Handler (User_Data : access Gtkada_Builder_Record'Class)
                           return Boolean;
@@ -315,42 +308,24 @@ package body Station_Gtk is
       return True;
    end Connect_Apply_Handler;
 
-   -------------------------
-   -- Pref_Cancel_Handler --
-   -------------------------
+   ----------------------------
+   -- Connect_Cancel_Handler --
+   ----------------------------
 
-   function Pref_Cancel_Handler
+   function Connect_Cancel_Handler
      (User_Data : access Gtkada_Builder_Record'Class) return Boolean;
-   function Pref_Cancel_Handler
+   function Connect_Cancel_Handler
      (User_Data : access Gtkada_Builder_Record'Class) return Boolean
    is
       pragma Unreferenced (User_Data);
    begin
       Serial_Dialog.Response (Gtk.Dialog.Gtk_Response_Cancel);
       return True;
-   end Pref_Cancel_Handler;
+   end Connect_Cancel_Handler;
 
-   function On_Key_Press (Self  : access Gtk_Widget_Record'Class;
-                          Event : Gdk.Event.Gdk_Event_Key) return Boolean;
-   function On_Key_Press (Self  : access Gtk_Widget_Record'Class;
-                          Event : Gdk.Event.Gdk_Event_Key) return Boolean is
-      pragma Unreferenced (Self);
-   begin
-      case Event.Keyval is
-         when Gdk.Types.Keysyms.GDK_Page_Up => Zoom := Zoom * 1.2;
-         when Gdk.Types.Keysyms.GDK_Page_Down => Zoom := Zoom / 1.2;
-         when Gdk.Types.Keysyms.GDK_Left => View_X :=
-              View_X + 30.0 * (1.0 / Zoom);
-         when Gdk.Types.Keysyms.GDK_Right => View_X :=
-              View_X - 30.0 * (1.0 / Zoom);
-         when Gdk.Types.Keysyms.GDK_Up => View_Y :=
-              View_Y - 30.0 * (1.0 / Zoom);
-         when Gdk.Types.Keysyms.GDK_Down => View_Y :=
-              View_Y + 30.0 * (1.0 / Zoom);
-         when others => null;
-      end case;
-      return True;
-   end On_Key_Press;
+   -----------------
+   -- Create_Tags --
+   -----------------
 
    procedure Create_Tags;
    procedure Create_Tags is
@@ -379,6 +354,10 @@ package body Station_Gtk is
       Color := (0.0, 3.0, 2.0, 0.5);
       Set_Property (Log_Board_Tag, Paragraph_Background_Rgba_Property, Color);
    end Create_Tags;
+
+   ------------------
+   -- Text_Tooltip --
+   ------------------
 
    function Text_Tooltip
      (Self          : access Gtk_Widget_Record'Class;
@@ -428,7 +407,7 @@ package body Station_Gtk is
       Register_Handler (Builder, "simulate_handler", Simulate_Handler'Access);
       Register_Handler (Builder, "connect_handler", Connect_Handler'Access);
       Register_Handler (Builder, "serial_cancel_handler",
-                        Pref_Cancel_Handler'Access);
+                        Connect_Cancel_Handler'Access);
       Register_Handler (Builder, "serial_save_handler",
                         Connect_Apply_Handler'Access);
 
@@ -465,7 +444,6 @@ package body Station_Gtk is
                         Event_Cb.To_Marshaller (Redraw'Unrestricted_Access));
 
       Main_W := Gtk.Window.Gtk_Window (Get_Object (Builder, "window1"));
-      Main_W.On_Key_Press_Event (On_Key_Press'Access);
 
       Do_Connect (Builder);
       Main_W.Show_All;
