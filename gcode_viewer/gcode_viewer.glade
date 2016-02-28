@@ -65,7 +65,7 @@
                 <property name="receives_default">True</property>
                 <property name="use_action_appearance">False</property>
                 <property name="use_stock">True</property>
-                <signal name="button-press-event" handler="pref_save_handler" swapped="no"/>
+                <signal name="button-press-event" handler="serial_save_handler" swapped="no"/>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -82,7 +82,7 @@
                 <property name="receives_default">True</property>
                 <property name="use_action_appearance">False</property>
                 <property name="use_stock">True</property>
-                <signal name="button-press-event" handler="pref_cancel_handler" swapped="no"/>
+                <signal name="button-press-event" handler="serial_cancel_handler" swapped="no"/>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -103,30 +103,24 @@
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <child>
-              <object class="GtkEntry" id="serial_name">
-                <property name="height_request">25</property>
+              <object class="GtkComboBoxText" id="serial_name_comboboxtext">
                 <property name="visible">True</property>
-                <property name="can_focus">True</property>
+                <property name="can_focus">False</property>
+                <property name="entry_text_column">0</property>
+                <property name="id_column">1</property>
               </object>
               <packing>
-                <property name="expand">True</property>
+                <property name="expand">False</property>
                 <property name="fill">True</property>
                 <property name="position">0</property>
               </packing>
             </child>
             <child>
-              <object class="GtkComboBox" id="combobox1">
+              <object class="GtkComboBoxText" id="serial_baud_comboboxtext">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="model">serial_baud_liststore</property>
-                <property name="active">0</property>
-                <property name="active_id">1</property>
-                <child>
-                  <object class="GtkCellRendererText" id="cellrenderertext1"/>
-                  <attributes>
-                    <attribute name="text">0</attribute>
-                  </attributes>
-                </child>
+                <property name="entry_text_column">0</property>
+                <property name="id_column">1</property>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -162,8 +156,6 @@ G03 X20 Y30 J5
   </object>
   <object class="GtkWindow" id="window1">
     <property name="can_focus">False</property>
-    <property name="default_width">800</property>
-    <property name="default_height">600</property>
     <child>
       <object class="GtkBox" id="box1">
         <property name="visible">True</property>
@@ -195,24 +187,24 @@ G03 X20 Y30 J5
               </object>
             </child>
             <child>
-              <object class="GtkImageMenuItem" id="menuitem3">
+              <object class="GtkImageMenuItem" id="connect">
+                <property name="label">gtk-connect</property>
+                <property name="use_action_appearance">False</property>
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="use_underline">True</property>
+                <property name="use_stock">True</property>
+                <signal name="button-press-event" handler="connect_handler" swapped="no"/>
+              </object>
+            </child>
+            <child>
+              <object class="GtkImageMenuItem" id="execute_menuitem">
                 <property name="label">gtk-execute</property>
                 <property name="use_action_appearance">False</property>
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="use_underline">True</property>
                 <property name="use_stock">True</property>
-              </object>
-            </child>
-            <child>
-              <object class="GtkImageMenuItem" id="preferences">
-                <property name="label">gtk-preferences</property>
-                <property name="use_action_appearance">False</property>
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="use_underline">True</property>
-                <property name="use_stock">True</property>
-                <signal name="button-press-event" handler="pref_handler" swapped="no"/>
               </object>
             </child>
           </object>
@@ -266,7 +258,8 @@ G03 X20 Y30 J5
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="orientation">vertical</property>
-                <property name="position">121</property>
+                <property name="position">665</property>
+                <property name="position_set">True</property>
                 <child>
                   <object class="GtkDrawingArea" id="drawingarea">
                     <property name="visible">True</property>

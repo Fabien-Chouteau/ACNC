@@ -24,9 +24,11 @@ with Gtk.Text_Tag; use Gtk.Text_Tag;
 with Gdk.RGBA; use Gdk.RGBA;
 with Glib.Properties;
 with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
---  with GNAT.Serial_Communications;
+with GNAT.Serial_Communications; use GNAT.Serial_Communications;
 with Gtk.Dialog; use Gtk.Dialog;
 with Machine_Motion_history; use Machine_Motion_history;
+with Gtk.Combo_Box_Text; use Gtk.Combo_Box_Text;
+with Gtk.Image_Menu_Item; use Gtk.Image_Menu_Item;
 
 package body Station_Gtk is
 
@@ -41,7 +43,11 @@ package body Station_Gtk is
    Zoom        : Gdouble := 0.19;
    View_X, View_Y : Gdouble := -2000.0;
    Serial_Dialog : Gtk_Dialog;
+   Serial_Name, Serial_Baud : Gtk_Combo_Box_Text;
+   Execute_Menu : Gtk_Image_Menu_Item;
    The_Builder : Gtkada_Builder;
+
+   Serial : Serial_Port;
 
    Log_Error_Tag : Gtk.Text_Tag.Gtk_Text_Tag;
    Log_Warning_Tag : Gtk.Text_Tag.Gtk_Text_Tag;
@@ -249,41 +255,81 @@ package body Station_Gtk is
    --  Pref_Handler --
    -------------------
 
-   function Pref_Handler (User_Data : access Gtkada_Builder_Record'Class)
+   function Connect_Handler (User_Data : access Gtkada_Builder_Record'Class)
                           return Boolean;
-   function Pref_Handler (User_Data : access Gtkada_Builder_Record'Class)
+   function Connect_Handler (User_Data : access Gtkada_Builder_Record'Class)
                           return Boolean
    is
       pragma Unreferenced (User_Data);
+      Serial_Found : Boolean := False;
    begin
+      Serial_Name.Remove_All;
+      for K in 1 .. 255 loop
+         declare
+            Port : Serial_Port;
+            Number : constant String := K'Img;
+            Name : constant String := "COM" &
+              Number (Number'First + 1 .. Number'Last);
+         begin
+            --  Test if serial port exists
+            Open (Port, Port_Name (Name));
+            Close (Port);
+            Serial_Name.Append_Text (Name);
+            Serial_Found := True;
+         exception
+            when Serial_Error =>
+               Put_Line ("Cannot open serial port: '" & Name & "'");
+         end;
+      end loop;
+
+      if not Serial_Found then
+         Serial_Name.Append_Text ("No serial port detected");
+      end if;
+
+      Serial_Name.Set_Active (0);
+
       if Serial_Dialog.Run = Gtk_Response_Apply then
          Ada.Text_IO.Put_Line ("Dialog run returned Apply");
+         if Serial_Found then
+            Put_Line ("Selected serial port:" & Serial_Name.Get_Active_Text &
+                        ":" & Serial_Baud.Get_Active_Text);
+            declare
+            begin
+               Open (Serial, Port_Name (Serial_Name.Get_Active_Text));
+               Set (Serial, Data_Rate'Value (Serial_Baud.Get_Active_Text));
+               Execute_Menu.Set_Sensitive (True);
+            exception
+               when Serial_Error =>
+                  Ctx.Log (Error, "Cannot open serial port" &
+                             Serial_Name.Get_Active_Text &
+                             ":" & Serial_Baud.Get_Active_Text);
+            end;
+         end if;
       else
          Ada.Text_IO.Put_Line ("Dialog run returned not Apply");
       end if;
       Serial_Dialog.Destroy;
       return True;
-   end Pref_Handler;
+   end Connect_Handler;
 
-   ------------------------
-   --  Pref_Save_Handler --
-   ------------------------
+   ---------------------------
+   -- Connect_Apply_Handler --
+   ---------------------------
 
-   function Pref_Apply_Handler
+   function Connect_Apply_Handler
      (User_Data : access Gtkada_Builder_Record'Class) return Boolean;
-   function Pref_Apply_Handler
+   function Connect_Apply_Handler
      (User_Data : access Gtkada_Builder_Record'Class) return Boolean
    is
       pragma Unreferenced (User_Data);
    begin
       Serial_Dialog.Response (Gtk.Dialog.Gtk_Response_Apply);
-      Ada.Text_IO.Put_Line ("Apply");
       return True;
-   end Pref_Apply_Handler;
+   end Connect_Apply_Handler;
 
-   --------------------------
-   --  Pref_Cancel_Handler --
-   --------------------------
+   -------------------------
+   -- Pref_Cancel_Handler --
+   -------------------------
 
    function Pref_Cancel_Handler
      (User_Data : access Gtkada_Builder_Record'Class) return Boolean;
@@ -293,7 +339,6 @@ package body Station_Gtk is
       pragma Unreferenced (User_Data);
    begin
       Serial_Dialog.Response (Gtk.Dialog.Gtk_Response_Cancel);
-      Ada.Text_IO.Put_Line ("Cancel");
       return True;
    end Pref_Cancel_Handler;
 
@@ -393,11 +438,11 @@ package body Station_Gtk is
       The_Builder := Builder;
       Register_Handler (Builder, "open_handler", Open_Handler'Access);
       Register_Handler (Builder, "simulate_handler", Simulate_Handler'Access);
-      Register_Handler (Builder, "pref_handler", Pref_Handler'Access);
-      Register_Handler (Builder, "pref_cancel_handler",
+      Register_Handler (Builder, "connect_handler", Connect_Handler'Access);
+      Register_Handler (Builder, "serial_cancel_handler",
                         Pref_Cancel_Handler'Access);
-      Register_Handler (Builder, "pref_save_handler",
-                        Pref_Apply_Handler'Access);
+      Register_Handler (Builder, "serial_save_handler",
+                        Connect_Apply_Handler'Access);
 
       File_Button := Gtk_File_Chooser_Button (Builder.Get_Object ("open"));
       Darea := Gtk_Drawing_Area (Builder.Get_Object ("drawingarea"));
@@ -410,6 +455,22 @@ package body Station_Gtk is
 
       Serial_Dialog := Gtk_Dialog (The_Builder.Get_Object ("serial_dialog"));
 
+      Serial_Name := Gtk_Combo_Box_Text
+        (The_Builder.Get_Object ("serial_name_comboboxtext"));
+      Serial_Baud := Gtk_Combo_Box_Text
+        (The_Builder.Get_Object ("serial_baud_comboboxtext"));
+
+      Serial_Baud.Remove_All;
+      for Baud in Data_Rate loop
+         Serial_Baud.Append_Text (Baud'Img);
+      end loop;
+      Serial_Baud.Set_Active (12);
+
+      Execute_Menu := Gtk_Image_Menu_Item
+        (The_Builder.Get_Object ("execute_menuitem"));
+
+      Execute_Menu.Set_Sensitive (False);
+
       Create_Tags;
 
       Event_Cb.Connect (Darea, Signal_Draw,
@@ -420,6 +481,7 @@ package body Station_Gtk is
 
       Do_Connect (Builder);
       Main_W.Show_All;
+      Main_W.Maximize;
 
       Src_Id := Timeout_Add (100, Window_Idle'Access);
       Src_Id := Timeout_Add (1, Stepper_Tick'Access);
