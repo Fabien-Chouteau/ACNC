@@ -88,7 +88,7 @@ package body Gcode.Planner is
          --  Distance traveled in milimeters
          Delta_MM :=
            Float_Value (Target_Steps (Axis) - Planner_Position (Axis))
-             / Ctx.Step_Per_Millimeter (Axis);
+             / Settings.Step_Per_Millimeter (Axis);
 
          --  Direction of movement for this axis
          M_Block.Directions (Axis) :=
@@ -187,9 +187,11 @@ package body Gcode.Planner is
          --  Blocking call
          Motion_Block_Buffer.Remove (Motion);
 
+
          case Motion.Kind is
             when Motion_Dwell =>
                Seg.New_Block := True;
+               Seg.Homing := False;
 
                --  100Hz gives us a 10ms precision
                Seg.Frequency :=
@@ -206,8 +208,12 @@ package body Gcode.Planner is
                Segment_Block_Buffer.Insert (Seg);
 
             when Motion_Homing =>
-               --  Not implemented
-               raise Program_Error;
+               Seg.Homing := True;
+               Seg.New_Block := True;
+
+               --  Blocking call
+               Segment_Block_Buffer.Insert (Seg);
+
             when Motion_Line =>
                Remaining_Steps := Motion.Step_Event_Count;
 
@@ -216,6 +222,7 @@ package body Gcode.Planner is
 
                --  Signal this segment as first of the new block
                Seg.New_Block := True;
+               Seg.Homing := False;
 
                --  Segment values that will remain for the entire block
                Seg.Block_Steps := Motion.Relative_Steps;

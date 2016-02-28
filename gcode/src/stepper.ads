@@ -9,11 +9,14 @@ package Stepper is
                                                              Dir : Direction);
    type Set_Stepper_Frequency_Proc is not null access procedure
      (Freq_Hz : Frequency_Value);
+   type Home_Test_Proc is not null access function (Axis : Axis_Name)
+   return Boolean;
 
    procedure Set_Stepper_Callbacks
      (Set_Step              : Set_Step_Pin_Proc;
       Clear_Step            : Clear_Step_Pin_Proc;
       Set_Direcetion        : Set_Direction_Pin_Proc;
-      Set_Stepper_Frequency : Set_Stepper_Frequency_Proc);
+      Set_Stepper_Frequency : Set_Stepper_Frequency_Proc;
+      Home_Test             : Home_Test_Proc);
 
 end Stepper;

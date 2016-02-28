@@ -19,7 +19,13 @@ package Gcode.Planner is
 
    type Segment is record
       New_Block  : Boolean;
+      --  This is the first segment of a new block
+
+      Homing : Boolean;
+      --  This is a homing segment
+
       Step_Count : Steps;
+      --  Number of steps in this segment
 
       Frequency : Frequency_Value;
       --  Requested stepper frequency for this segment
@@ -32,6 +38,7 @@ package Gcode.Planner is
 
       Block_Event_Count : Steps;
       --  Step count for the current block
+
    end record;
 
    function Get_Next_Segment (Seg : out Segment) return Boolean;

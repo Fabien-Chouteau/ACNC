@@ -63,18 +63,6 @@ package body Station_Gtk is
    use type Gdk.Gdk_Window;
 
    overriding
-   function Home (Ctx : in out GTK_CNC; Axis : Axis_Name) return Boolean is
-   begin
-      case Axis is
-         when X_Axis => return Current_Position (X_Axis) <= 0;
-         when Y_Axis => return Current_Position (Y_Axis) <= 0;
-         when Z_Axis =>
-            return Current_Position (Z_Axis) >=
-              Steps (Ctx.Step_Per_Millimeter (Z_Axis) * 2.0);
-      end case;
-   end Home;
-
-   overriding
    procedure Report_Error (Ctx : in out GTK_CNC;
                            Line, Msg : String;
                            EStart, EEnd : Natural) is

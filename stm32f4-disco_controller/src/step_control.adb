@@ -16,6 +16,7 @@ package body Step_Control is
    procedure Clear_Step_Pin (Axis : Axis_Name);
    procedure Set_Step_Pin (Axis : Axis_Name);
    procedure Set_Stepper_Frequency (Freq_Hz : Frequency_Value);
+   function Home_Test (Axis : Axis_Name) return Boolean;
 
    ---------------
    -- Initalize --
@@ -101,6 +102,17 @@ package body Step_Control is
    end Set_Stepper_Frequency;
 
    ---------------
+   -- Home_Test --
+   ---------------
+
+   function Home_Test (Axis : Axis_Name) return Boolean is
+   begin
+      --  Not implemented
+      raise Program_Error;
+      return False;
+   end Home_Test;
+
+   ---------------
    -- Step_Task --
    ---------------
 
@@ -114,10 +126,11 @@ package body Step_Control is
       Ada.Synchronous_Task_Control.Suspend_Until_True (Task_Sync);
 
       Stepper.Set_Stepper_Callbacks
-        (Set_Step       => Set_Step_Pin'Access,
-         Clear_Step     => Clear_Step_Pin'Access,
-         Set_Direcetion => Set_Step_Direction'Access,
-         Set_Stepper_Frequency => Set_Stepper_Frequency'Access);
+        (Set_Step              => Set_Step_Pin'Access,
+         Clear_Step            => Clear_Step_Pin'Access,
+         Set_Direcetion        => Set_Step_Direction'Access,
+         Set_Stepper_Frequency => Set_Stepper_Frequency'Access,
+         Home_Test             => Home_Test'Access);
 
       loop
          Next_Period := Next_Period + Task_Period;

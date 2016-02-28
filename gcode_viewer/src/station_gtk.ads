@@ -13,8 +13,6 @@ package Station_Gtk is
    end record;
 
    overriding
-   function Home (Ctx : in out GTK_CNC; Axis : Axis_Name) return Boolean;
-   overriding
    procedure Report_Error (Ctx : in out GTK_CNC;
                            Line, Msg : String;
                            EStart, EEnd : Natural);

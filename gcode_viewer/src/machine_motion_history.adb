@@ -3,6 +3,14 @@ with Ada.Containers.Doubly_Linked_Lists;
 with Stepper; use Stepper;
 with Settings;
 
+----------------------------
+-- Machine_Motion_history --
+----------------------------
+
+----------------------------
+-- Machine_Motion_history --
+----------------------------
+
 package body Machine_Motion_history is
 
    use type Step_Position;
@@ -16,8 +24,10 @@ package body Machine_Motion_history is
    procedure Clear_Step_Pin (Axis : Axis_Name);
    procedure Set_Step_Pin (Axis : Axis_Name);
    procedure Set_Stepper_Frequency (Freq_Hz : Frequency_Value);
+   function Home_Test (Axis : Axis_Name) return Boolean;
 
    Task_Period : Time_Span := Milliseconds (500);
+   Time_Factor : Integer := 10;
 
    -----------------
    -- Machine_Sim --
@@ -146,10 +156,27 @@ package body Machine_Motion_history is
       Machine_Sim.Set_Step_Direction (Axis, Dir);
    end Set_Step_Direction;
 
+   ---------------------------
+   -- Set_Stepper_Frequency --
+   ---------------------------
+
    procedure Set_Stepper_Frequency (Freq_Hz : Frequency_Value) is
    begin
       Task_Period := To_Time_Span (1.0 / Freq_Hz);
    end Set_Stepper_Frequency;
+
+   ---------------
+   -- Home_Test --
+   ---------------
+
+   function Home_Test (Axis : Axis_Name) return Boolean is
+   begin
+      if Axis = Z_Axis then
+         return Machine_Sim.Current_Position (Axis) > 500;
+      else
+         return Machine_Sim.Current_Position (Axis) < 0;
+      end if;
+   end Home_Test;
 
    ----------------------
    -- Current_Position --
@@ -172,6 +199,15 @@ package body Machine_Motion_history is
       Machine_Sim.Clear_History;
    end Clear_History;
 
+   ---------------------
+   -- Set_Time_Factor --
+   ---------------------
+
+   procedure Set_Time_Factor (Factor : Integer) is
+   begin
+      Time_Factor := Factor;
+   end Set_Time_Factor;
+
    -----------------
    -- Stepper_Sim --
    -----------------
@@ -185,9 +221,11 @@ package body Machine_Motion_history is
       loop
          Next_Period := Next_Period + Task_Period;
 
-         if Stepper.Execute_Step_Event then
-            null;
-         end if;
+         for Cnt in 1 .. Time_Factor loop
+            if Stepper.Execute_Step_Event then
+               null;
+            end if;
+         end loop;
 
          delay until Next_Period;
       end loop;
@@ -197,9 +235,10 @@ begin
    Set_Stepper_Frequency (Settings.Idle_Stepper_Frequency);
 
    Stepper.Set_Stepper_Callbacks
-     (Set_Step       => Set_Step_Pin'Access,
-      Clear_Step     => Clear_Step_Pin'Access,
-      Set_Direcetion => Set_Step_Direction'Access,
-      Set_Stepper_Frequency => Set_Stepper_Frequency'Access);
+     (Set_Step              => Set_Step_Pin'Access,
+      Clear_Step            => Clear_Step_Pin'Access,
+      Set_Direcetion        => Set_Step_Direction'Access,
+      Set_Stepper_Frequency => Set_Stepper_Frequency'Access,
+      Home_Test             => Home_Test'Access);
 
 end Machine_Motion_history;

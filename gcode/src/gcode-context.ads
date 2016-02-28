@@ -10,7 +10,6 @@ package Gcode.Context is
       Fast_Feed_Rate   : Step_Speed := 2.0;
       Current_Feed_Rate : Step_Speed := 1.0;
       Error_Flag : Boolean := False;
-      Step_Per_Millimeter : Float_Position := (100.0, 100.0, 100.0);
 --        Real_Position : Step_Position;
       Virt_Position : Float_Position;
    end record;

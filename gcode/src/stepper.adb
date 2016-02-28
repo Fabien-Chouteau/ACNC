@@ -2,9 +2,13 @@ with Ada.Real_Time; use Ada.Real_Time;
 with Ada.Real_Time.Timing_Events; use Ada.Real_Time.Timing_Events;
 with Gcode.Planner; use Gcode.Planner;
 with System;
-with Settings;
+with Settings; use Settings;
 
 package body Stepper is
+
+   type Homing_Cycle_State is (Homing_Approach,
+                               Homing_Back,
+                               Homing_Precision);
 
    type Do_Step_Array is array (Axis_Name) of Boolean;
 
@@ -13,7 +17,9 @@ package body Stepper is
    procedure Dummy_Set_Direction_Pin (Axis : Axis_Name;
                                       Dir : Direction) is null;
    procedure Dummy_Set_Stepper_Frequency (Freq_Hz : Frequency_Value) is null;
-
+   function Dummy_Home_Test (Axis : Axis_Name) return Boolean is (False);
+   procedure Setup_Homing;
+   function Homing return Boolean;
 
    type Stepper_Data_Type is record
       Has_Segment : Boolean := False;
@@ -47,8 +53,20 @@ package body Stepper is
       Set_Stepper_Frequency_Callback : Set_Stepper_Frequency_Proc :=
         Dummy_Set_Stepper_Frequency'Access;
 
+      Home_Test_Callback : Home_Test_Proc :=
+        Dummy_Home_Test'Access;
+
       Current_Position : Step_Position := (others => 0);
       --  Keep track of the actuall position of the machine
+
+      Homing_State : Homing_Cycle_State;
+      --  Curent state in homing procedure
+
+      Homing_Axis : Axis_Name;
+      --  Current homing axis
+
+      Homing_Order_Index : Settings.Homing_Order_Range;
+      --  Index of current homing axis in the Homing_Order array
    end record;
 
    St_Data : Stepper_Data_Type;
@@ -152,6 +170,72 @@ package body Stepper is
       end Clear_Step_Pins;
    end Step_Pulse;
 
+   ------------------
+   -- Setup_Homing --
+   ------------------
+
+   procedure Setup_Homing is
+   begin
+      St_Data.Homing_Axis  :=
+        Settings.Homing_Order (St_Data.Homing_Order_Index);
+
+      St_Data.Set_Stepper_Frequency_Callback
+        (Frequency_Value (Homing_Approach_Feed_Rate *
+             Step_Per_Millimeter (St_Data.Homing_Axis)));
+
+      St_Data.Homing_State := Homing_Approach;
+
+      St_Data.Directions   := Settings.Homing_Directions;
+   end Setup_Homing;
+
+   ------------
+   -- Homing --
+   ------------
+
+   function Homing return Boolean is
+   begin
+      St_Data.Do_Step := (others => False);
+      St_Data.Do_Step (St_Data.Homing_Axis) := True;
+
+      case St_Data.Homing_State is
+         when Homing_Approach =>
+            if St_Data.Home_Test_Callback (St_Data.Homing_Axis) then
+               St_Data.Homing_State := Homing_Back;
+               Reverse_Dir (St_Data.Directions (St_Data.Homing_Axis));
+            end if;
+
+         when Homing_Back =>
+            if not St_Data.Home_Test_Callback (St_Data.Homing_Axis) then
+               St_Data.Homing_State := Homing_Precision;
+               Reverse_Dir (St_Data.Directions (St_Data.Homing_Axis));
+
+               --  Switch to precission feed rate
+               St_Data.Set_Stepper_Frequency_Callback
+                 (Frequency_Value (Homing_Precision_Feed_Rate *
+                      Step_Per_Millimeter (St_Data.Homing_Axis)));
+
+            end if;
+
+         when Homing_Precision =>
+            if St_Data.Home_Test_Callback (St_Data.Homing_Axis) then
+               if St_Data.Homing_Order_Index = Settings.Homing_Order_Range'Last
+               then
+                  --  End of homing
+                  St_Data.Has_Segment := False;
+               else
+                  --  Start homing cycle for next axis
+                  St_Data.Homing_Order_Index := St_Data.Homing_Order_Index + 1;
+                  Setup_Homing;
+               end if;
+            end if;
+      end case;
+      return True;
+   end Homing;
+
+   ------------------------
+   -- Execute_Step_Event --
+   ------------------------
+
    function Execute_Step_Event return Boolean is
    begin
 
@@ -163,24 +247,34 @@ package body Stepper is
 
       if not St_Data.Has_Segment then
          if Get_Next_Segment (St_Data.Seg) then
+
             St_Data.Has_Segment := True;
             --  Process new segment
 
-            St_Data.Step_Count := St_Data.Seg.Step_Count;
-            St_Data.Directions := St_Data.Seg.Directions;
+            if St_Data.Seg.Homing then
+               --  Start homing
 
-            --  Set frequency for this segment
-            St_Data.Set_Stepper_Frequency_Callback (St_Data.Seg.Frequency);
+               St_Data.Homing_Order_Index := Settings.Homing_Order'First;
+               Setup_Homing;
 
-            if St_Data.Seg.New_Block then
-               --  This is the first segment of a new block
+            else
+               --  Motion segment
 
-               --  Prep data for bresenham algorithm
-               St_Data.Counter := (others => 0);
-               St_Data.Block_Steps := St_Data.Seg.Block_Steps;
-               St_Data.Block_Event_Count :=
-                 St_Data.Seg.Block_Event_Count;
+               St_Data.Step_Count := St_Data.Seg.Step_Count;
+               St_Data.Directions := St_Data.Seg.Directions;
 
+               --  Set frequency for this segment
+               St_Data.Set_Stepper_Frequency_Callback (St_Data.Seg.Frequency);
+
+               if St_Data.Seg.New_Block then
+                  --  This is the first segment of a new block
+
+                  --  Prep data for bresenham algorithm
+                  St_Data.Counter := (others => 0);
+                  St_Data.Block_Steps := St_Data.Seg.Block_Steps;
+                  St_Data.Block_Event_Count :=
+                    St_Data.Seg.Block_Event_Count;
+               end if;
             end if;
          else
             --  No segment to exectute
@@ -190,31 +284,35 @@ package body Stepper is
          end if;
       end if;
 
-      --  Bresenham for each axis
-      for Axis in Axis_Name loop
-         St_Data.Counter (Axis) :=
-           St_Data.Counter (Axis) + St_Data.Block_Steps (Axis);
-
-         if St_Data.Counter (Axis) > St_Data.Block_Event_Count then
-            St_Data.Do_Step (Axis) := True;
+      if St_Data.Seg.Homing then
+         return Homing;
+      else
+         --  Bresenham for each axis
+         for Axis in Axis_Name loop
             St_Data.Counter (Axis) :=
-              St_Data.Counter (Axis) - St_Data.Block_Event_Count;
-            if St_Data.Directions (Axis) = Forward then
-               St_Data.Current_Position (Axis) :=
-                 St_Data.Current_Position (Axis) + 1;
-            else
-               St_Data.Current_Position (Axis) :=
-                 St_Data.Current_Position (Axis) + 1;
-            end if;
-         else
-            St_Data.Do_Step (Axis) := False;
-         end if;
-      end loop;
+              St_Data.Counter (Axis) + St_Data.Block_Steps (Axis);
 
-      St_Data.Step_Count := St_Data.Step_Count - 1;
-      --  Check end of segement
-      if St_Data.Step_Count = 0 then
-         St_Data.Has_Segment := False;
+            if St_Data.Counter (Axis) > St_Data.Block_Event_Count then
+               St_Data.Do_Step (Axis) := True;
+               St_Data.Counter (Axis) :=
+                 St_Data.Counter (Axis) - St_Data.Block_Event_Count;
+               if St_Data.Directions (Axis) = Forward then
+                  St_Data.Current_Position (Axis) :=
+                    St_Data.Current_Position (Axis) + 1;
+               else
+                  St_Data.Current_Position (Axis) :=
+                    St_Data.Current_Position (Axis) + 1;
+               end if;
+            else
+               St_Data.Do_Step (Axis) := False;
+            end if;
+         end loop;
+
+         St_Data.Step_Count := St_Data.Step_Count - 1;
+         --  Check end of segement
+         if St_Data.Step_Count = 0 then
+            St_Data.Has_Segment := False;
+         end if;
       end if;
 
       return True;
@@ -228,13 +326,15 @@ package body Stepper is
      (Set_Step              : Set_Step_Pin_Proc;
       Clear_Step            : Clear_Step_Pin_Proc;
       Set_Direcetion        : Set_Direction_Pin_Proc;
-      Set_Stepper_Frequency : Set_Stepper_Frequency_Proc)
+      Set_Stepper_Frequency : Set_Stepper_Frequency_Proc;
+      Home_Test             : Home_Test_Proc)
    is
    begin
       St_Data.Set_Step_Callback := Set_Step;
       St_Data.Clear_Step_Callback := Clear_Step;
       St_Data.Set_Direction_Callback := Set_Direcetion;
       St_Data.Set_Stepper_Frequency_Callback := Set_Stepper_Frequency;
+      St_Data.Home_Test_Callback := Home_Test;
    end Set_Stepper_Callbacks;
 
 end Stepper;

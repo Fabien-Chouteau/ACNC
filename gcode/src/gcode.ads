@@ -24,6 +24,8 @@ package Gcode is
    type Direction is (Forward, Backward);
    type Axis_Directions is array (Axis_Name) of Direction;
 
+   procedure Reverse_Dir (Dir : in out Direction);
+
    package Float_Coords is new Coords (Float_Value, Axis_Name);
    subtype Float_Position is Float_Coords.Position;
 

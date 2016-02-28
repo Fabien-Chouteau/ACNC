@@ -1,3 +1,4 @@
+with Settings;
 with Ada.Text_IO; use Ada.Text_IO;
 with Gcode.Error; use Gcode.Error;
 
@@ -10,10 +11,12 @@ package body Gcode.Context is
    function Step_To_Milli (Ctx : in out GContext; S : Step_Position)
                            return Float_Position
    is
+      pragma Unreferenced (Ctx);
       Ret : Float_Position;
    begin
       for Axis in Axis_Name loop
-         Ret (Axis) := Float_Value (S (Axis)) / Ctx.Step_Per_Millimeter (Axis);
+         Ret (Axis) :=
+           Float_Value (S (Axis)) / Settings.Step_Per_Millimeter (Axis);
       end loop;
       return Ret;
    end Step_To_Milli;
@@ -25,10 +28,12 @@ package body Gcode.Context is
    function Milli_To_Step (Ctx : in out GContext; S : Float_Position)
                            return Step_Position
    is
+      pragma Unreferenced (Ctx);
       Ret : Step_Position;
    begin
       for Axis in Axis_Name loop
-         Ret (Axis) := Steps (S (Axis) * Ctx.Step_Per_Millimeter (Axis));
+         Ret (Axis) :=
+           Steps (S (Axis) * Settings.Step_Per_Millimeter (Axis));
       end loop;
       return Ret;
    end Milli_To_Step;

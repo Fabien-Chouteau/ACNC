@@ -1,5 +1,14 @@
 package body Gcode is
 
+   -----------------
+   -- Reverse_Dir --
+   -----------------
+
+   procedure Reverse_Dir (Dir : in out Direction) is
+   begin
+      Dir := (if Dir = Forward then Backward else Forward);
+   end Reverse_Dir;
+
    --------------
    -- Distance --
    --------------
