@@ -248,18 +248,16 @@ package body Station_Gtk is
       for K in 1 .. 255 loop
          declare
             Port : Serial_Port;
-            Number : constant String := K'Img;
-            Name : constant String := "COM" &
-              Number (Number'First + 1 .. Number'Last);
+            Name : constant Port_Name := GNAT.Serial_Communications.Name (K);
          begin
             --  Test if serial port exists
             Open (Port, Port_Name (Name));
             Close (Port);
-            Serial_Name.Append_Text (Name);
+            Serial_Name.Append_Text (String (Name));
             Serial_Found := True;
          exception
             when Serial_Error =>
-               Put_Line ("Cannot open serial port: '" & Name & "'");
+               Put_Line ("Cannot open serial port: '" & String (Name) & "'");
          end;
       end loop;
 
