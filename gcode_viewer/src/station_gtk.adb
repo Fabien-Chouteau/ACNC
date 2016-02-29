@@ -44,7 +44,7 @@ package body Station_Gtk is
    Execute_Menu : Gtk_Image_Menu_Item;
    The_Builder : Gtkada_Builder;
 
-   Serial : Serial_Port;
+   Serial : aliased Serial_Port;
 
    Log_Error_Tag : Gtk.Text_Tag.Gtk_Text_Tag;
    Log_Warning_Tag : Gtk.Text_Tag.Gtk_Text_Tag;
@@ -321,6 +321,43 @@ package body Station_Gtk is
       return True;
    end Connect_Cancel_Handler;
 
+   ---------------------
+   -- Execute_Handler --
+   ---------------------
+
+   function Execute_Handler
+     (User_Data : access Gtkada_Builder_Record'Class) return Boolean;
+   function Execute_Handler
+     (User_Data : access Gtkada_Builder_Record'Class) return Boolean
+   is
+      pragma Unreferenced (User_Data);
+      Data : String (1 .. 10);
+      Start_Iter, End_Iter : Gtk_Text_Iter;
+      Line_Cnt : Gint := 0;
+   begin
+      loop
+         Text.Get_Iter_At_Line (Start_Iter, Line_Cnt);
+         Text.Get_Iter_At_Line (End_Iter, Line_Cnt + 1);
+         exit when Is_End (Start_Iter);
+         declare
+            Line : constant UTF8_String :=
+              Text.Get_Text (Start_Iter, End_Iter);
+         begin
+            UTF8_String'Write (Serial'Access, Line & ASCII.LF & ASCII.CR);
+            String'Read (Serial'Access, Data);
+            Put_Line ("Len :" & Data'Length'Img);
+            Put_Line ("Data : '" & Data & "'");
+         exception
+            when others =>
+               Put_Line ("Exception");
+               exit;
+         end;
+         Line_Cnt := Line_Cnt + 1;
+      end loop;
+
+      return True;
+   end Execute_Handler;
+
    -----------------
    -- Create_Tags --
    -----------------
@@ -408,6 +445,8 @@ package body Station_Gtk is
                         Connect_Cancel_Handler'Access);
       Register_Handler (Builder, "serial_save_handler",
                         Connect_Apply_Handler'Access);
+      Register_Handler (Builder, "execute_handler",
+                        Execute_Handler'Access);
 
       File_Button := Gtk_File_Chooser_Button (Builder.Get_Object ("open"));
       Darea := Gtk_Drawing_Area (Builder.Get_Object ("drawingarea"));
