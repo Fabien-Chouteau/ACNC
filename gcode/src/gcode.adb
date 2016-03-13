@@ -1,3 +1,5 @@
+with Settings;
+
 package body Gcode is
 
    ---------------
@@ -22,6 +24,55 @@ package body Gcode is
       Dir := (if Dir = Forward then Backward else Forward);
    end Reverse_Dir;
 
+   -------------------
+   -- Step_To_Milli --
+   -------------------
+
+   function Step_To_Milli (S : Step_Position) return Float_Position is
+      Ret : Float_Position;
+   begin
+      for Axis in Axis_Name loop
+         Ret (Axis) :=
+           Float_Value (S (Axis)) / Settings.Step_Per_Millimeter (Axis);
+      end loop;
+      return Ret;
+   end Step_To_Milli;
+
+   -------------------
+   -- Milli_To_Step --
+   -------------------
+
+   function Milli_To_Step (S : Float_Position) return Step_Position is
+      Ret : Step_Position;
+   begin
+      for Axis in Axis_Name loop
+         Ret (Axis) :=
+           Steps (S (Axis) * Settings.Step_Per_Millimeter (Axis));
+      end loop;
+      return Ret;
+   end Milli_To_Step;
+
+   -------------------
+   -- Inch_To_Milli --
+   -------------------
+
+   function Inch_To_Milli (S : Float_Position) return Float_Position is
+      Ret : Float_Position;
+   begin
+      for Axis in Axis_Name loop
+         Ret (Axis) := Inch_To_Milli (S (Axis));
+      end loop;
+      return Ret;
+   end Inch_To_Milli;
+
+   -------------------
+   -- Inch_To_Milli --
+   -------------------
+
+   function Inch_To_Milli (S : Float_Value) return Float_Value is
+   begin
+      return S * 25.4;
+   end Inch_To_Milli;
    --------------
    -- Distance --
    --------------

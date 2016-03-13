@@ -3,6 +3,7 @@ with Ada.Real_Time.Timing_Events; use Ada.Real_Time.Timing_Events;
 with Gcode.Planner; use Gcode.Planner;
 with System;
 with Settings; use Settings;
+with Gcode.Context; use Gcode.Context;
 
 package body Stepper is
 
@@ -225,6 +226,8 @@ package body Stepper is
                then
                   --  End of homing
                   St_Data.Has_Segment := False;
+                  St_Data.Current_Position :=
+                    Milli_To_Step (Settings.Home_Coordinate);
                else
                   --  Start homing cycle for next axis
                   St_Data.Homing_Order_Index := St_Data.Homing_Order_Index + 1;

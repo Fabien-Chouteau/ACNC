@@ -36,6 +36,11 @@ package Gcode is
    package Steps_Coords is new Coords (Steps, Axis_Name);
    subtype Step_Position is Steps_Coords.Position;
 
+   function Step_To_Milli (S : Step_Position) return Float_Position;
+   function Milli_To_Step (S : Float_Position) return Step_Position;
+   function Inch_To_Milli (S : Float_Position) return Float_Position;
+   function Inch_To_Milli (S : Float_Value) return Float_Value;
+
    type Step_Speed is new Float_Value;
    type Step_Acceleration is new Float_Value;
 

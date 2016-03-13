@@ -1,5 +1,6 @@
 with Gcode.Motion;
 with Gcode.Planner;
+with Settings;
 
 package body Gcode.Execution is
 
@@ -126,6 +127,7 @@ package body Gcode.Execution is
 
       Gcode.Planner.Planner_Add_Homing (Ctx       => Ctx,
                                         Feed_Rate => Feed_Rate);
+      Ctx.Virt_Position := Settings.Home_Coordinate;
    end Return_To_Home;
 
    -------------------

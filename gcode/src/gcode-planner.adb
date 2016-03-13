@@ -73,8 +73,9 @@ package body Gcode.Planner is
       Target    : Float_Position;
       Feed_Rate : Step_Speed)
    is
+      pragma Unreferenced (Ctx);
       M_Block : Motion_Block (Kind => Motion_Line);
-      Target_Steps : constant Step_Position := Milli_To_Step (Ctx, Target);
+      Target_Steps : constant Step_Position := Milli_To_Step (Target);
       Delta_MM : Float_Value;
 
       Unit_Vect : Float_Position;

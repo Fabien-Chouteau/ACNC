@@ -31,6 +31,10 @@ package Settings is
    -- Homing --
    ------------
 
+   Home_Coordinate : constant Gcode.Float_Position :=
+     (0.0, 0.0, 0.0);
+   --  Coordinates of the home position
+
    Homing_Directions : constant Gcode.Axis_Directions :=
      (Gcode.X_Axis => Gcode.Backward,
       Gcode.Y_Axis => Gcode.Backward,

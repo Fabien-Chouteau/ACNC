@@ -24,13 +24,6 @@ package Gcode.Context is
                            Line, Msg : String;
                            EStart : Natural);
 
-   function Step_To_Milli (Ctx : in out GContext; S : Step_Position)
-                           return Float_Position;
-   function Milli_To_Step (Ctx : in out GContext; S : Float_Position)
-                           return Step_Position;
-   function Inch_To_Milli (S : Float_Position) return Float_Position;
-   function Inch_To_Milli (S : Float_Value) return Float_Value;
-
    procedure Raise_Error (Ctx : in out GContext; Msg : String);
    procedure Clear_Error (Ctx : in out GContext);
    function Error_Raised (Ctx : in out GContext) return Boolean;
