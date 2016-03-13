@@ -58,10 +58,10 @@ package body Machine_Motion_history is
       begin
          Current_Pos (Axis) := Current_Pos (Axis) + S;
 
-         --  Do not Save Z_Axis
-         if Axis /= Z_Axis then
-            History.Append (Current_Position);
-         end if;
+--           --  Do not Save Z_Axis
+--           if Axis /= Z_Axis then
+         History.Append (Current_Position);
+--           end if;
       end Set_Step_Pin;
 
       --------------------
@@ -98,6 +98,7 @@ package body Machine_Motion_history is
       ------------------
 
       procedure Draw_History (Cr : Cairo_Context; Zoom : Gdouble) is
+         Scale : Gdouble;
       begin
          for Pos of History loop
             if Pos (Z_Axis) > 0 then
@@ -105,6 +106,15 @@ package body Machine_Motion_history is
             else
                Set_Source_Rgb (Cr, 1.0, 0.0, 0.0);
             end if;
+            Scale := Gdouble (Pos (Z_Axis)) / 5.0;
+            if Scale > 1.0 then
+               Scale := 1.0;
+            elsif Scale < 0.0 then
+               Scale := 0.0;
+            end if;
+
+            Set_Source_Rgb (Cr, 1.0, 0.0, Scale);
+
             Rectangle (Cr     => Cr,
                        X      => Gdouble (Pos (X_Axis)) - 1.0 * (1.0 / Zoom),
                        Y      => Gdouble (Pos (Y_Axis)) - 1.0 * (1.0 / Zoom),
@@ -162,7 +172,7 @@ package body Machine_Motion_history is
 
    procedure Set_Stepper_Frequency (Freq_Hz : Frequency_Value) is
    begin
-      Task_Period := To_Time_Span (1.0 / Freq_Hz);
+      Task_Period := To_Time_Span (1.0 / (Freq_Hz / 10));
    end Set_Stepper_Frequency;
 
    ---------------
@@ -221,7 +231,7 @@ package body Machine_Motion_history is
       loop
          Next_Period := Next_Period + Task_Period;
 
-         for Cnt in 1 .. Time_Factor loop
+         for Cnt in 1 .. Time_Factor * 10 loop
             if Stepper.Execute_Step_Event then
                null;
             end if;

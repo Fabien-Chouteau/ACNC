@@ -25,6 +25,7 @@ with Gtk.Dialog; use Gtk.Dialog;
 with Machine_Motion_history; use Machine_Motion_history;
 with Gtk.Combo_Box_Text; use Gtk.Combo_Box_Text;
 with Gtk.Image_Menu_Item; use Gtk.Image_Menu_Item;
+with Control_Window;
 
 package body Station_Gtk is
 
@@ -54,7 +55,7 @@ package body Station_Gtk is
    Error_Msg : Unbounded_String;
    Error_Line : Gint;
 
-   Ctx : GTK_CNC;
+   Ctx : aliased GTK_CNC;
 
    use type Step_Position;
    use type Gdk.Gdk_Window;
@@ -77,6 +78,26 @@ package body Station_Gtk is
 
    function Redraw (Area  : access Gtk_Drawing_Area_Record'Class;
                     Cr    : Cairo_Context) return Boolean;
+   procedure Open_Handler (User_Data : access Gtkada_Builder_Record'Class);
+   function Travel_Gcode (Line : String) return Boolean;
+   function Simulate_Handler (User_Data : access Gtkada_Builder_Record'Class)
+                             return Boolean;
+   function Connect_Handler (User_Data : access Gtkada_Builder_Record'Class)
+                          return Boolean;
+   function Connect_Apply_Handler
+     (User_Data : access Gtkada_Builder_Record'Class) return Boolean;
+   function Connect_Cancel_Handler
+     (User_Data : access Gtkada_Builder_Record'Class) return Boolean;
+   function Execute_Handler
+     (User_Data : access Gtkada_Builder_Record'Class) return Boolean;
+   procedure Create_Tags;
+   function Text_Tooltip
+     (Self          : access Gtk_Widget_Record'Class;
+      X             : Gint;
+      Y             : Gint;
+      Keyboard_Mode : Boolean;
+      Tooltip       : not null access Glib.Object.GObject_Record'Class)
+   return Boolean;
 
    -----------------
    -- Window_Idle --
@@ -151,7 +172,6 @@ package body Station_Gtk is
    --  Open_Handler --
    -------------------
 
-   procedure Open_Handler (User_Data : access Gtkada_Builder_Record'Class);
    procedure Open_Handler (User_Data : access Gtkada_Builder_Record'Class) is
       pragma Unreferenced (User_Data);
       File       : Ada.Text_IO.File_Type;
@@ -178,7 +198,9 @@ package body Station_Gtk is
       Ada.Text_IO.Close (File);
    end Open_Handler;
 
-   function Travel_Gcode (Line : String) return Boolean;
+   ------------------
+   -- Travel_Gcode --
+   ------------------
 
    function Travel_Gcode (Line : String) return Boolean is
    begin
@@ -192,8 +214,6 @@ package body Station_Gtk is
    --  Simulate_Handler --
    -----------------------
 
-   function Simulate_Handler (User_Data : access Gtkada_Builder_Record'Class)
-                             return Boolean;
    function Simulate_Handler (User_Data : access Gtkada_Builder_Record'Class)
                              return Boolean
    is
@@ -237,8 +257,6 @@ package body Station_Gtk is
    ---------------------
 
    function Connect_Handler (User_Data : access Gtkada_Builder_Record'Class)
-                          return Boolean;
-   function Connect_Handler (User_Data : access Gtkada_Builder_Record'Class)
                           return Boolean
    is
       pragma Unreferenced (User_Data);
@@ -257,7 +275,8 @@ package body Station_Gtk is
             Serial_Found := True;
          exception
             when Serial_Error =>
-               Put_Line ("Cannot open serial port: '" & String (Name) & "'");
+               --  Not a valid serial port
+               null;
          end;
       end loop;
 
@@ -268,7 +287,6 @@ package body Station_Gtk is
       Serial_Name.Set_Active (0);
 
       if Serial_Dialog.Run = Gtk_Response_Apply then
-         Ada.Text_IO.Put_Line ("Dialog run returned Apply");
          if Serial_Found then
             Put_Line ("Selected serial port:" & Serial_Name.Get_Active_Text &
                         ":" & Serial_Baud.Get_Active_Text);
@@ -284,8 +302,6 @@ package body Station_Gtk is
                              ":" & Serial_Baud.Get_Active_Text);
             end;
          end if;
-      else
-         Ada.Text_IO.Put_Line ("Dialog run returned not Apply");
       end if;
       Serial_Dialog.Destroy;
       return True;
@@ -295,8 +311,6 @@ package body Station_Gtk is
    -- Connect_Apply_Handler --
    ---------------------------
 
-   function Connect_Apply_Handler
-     (User_Data : access Gtkada_Builder_Record'Class) return Boolean;
    function Connect_Apply_Handler
      (User_Data : access Gtkada_Builder_Record'Class) return Boolean
    is
@@ -311,8 +325,6 @@ package body Station_Gtk is
    ----------------------------
 
    function Connect_Cancel_Handler
-     (User_Data : access Gtkada_Builder_Record'Class) return Boolean;
-   function Connect_Cancel_Handler
      (User_Data : access Gtkada_Builder_Record'Class) return Boolean
    is
       pragma Unreferenced (User_Data);
@@ -325,8 +337,6 @@ package body Station_Gtk is
    -- Execute_Handler --
    ---------------------
 
-   function Execute_Handler
-     (User_Data : access Gtkada_Builder_Record'Class) return Boolean;
    function Execute_Handler
      (User_Data : access Gtkada_Builder_Record'Class) return Boolean
    is
@@ -362,7 +372,6 @@ package body Station_Gtk is
    -- Create_Tags --
    -----------------
 
-   procedure Create_Tags;
    procedure Create_Tags is
       Tag     : Gtk.Text_Tag.Gtk_Text_Tag;
       Color   : Gdk_RGBA;
@@ -393,14 +402,6 @@ package body Station_Gtk is
    ------------------
    -- Text_Tooltip --
    ------------------
-
-   function Text_Tooltip
-     (Self          : access Gtk_Widget_Record'Class;
-      X             : Gint;
-      Y             : Gint;
-      Keyboard_Mode : Boolean;
-      Tooltip       : not null access Glib.Object.GObject_Record'Class)
-   return Boolean;
 
    function Text_Tooltip
      (Self          : access Gtk_Widget_Record'Class;
@@ -447,6 +448,7 @@ package body Station_Gtk is
                         Connect_Apply_Handler'Access);
       Register_Handler (Builder, "execute_handler",
                         Execute_Handler'Access);
+      Control_Window.Register_Handlers (Builder, Ctx'Access);
 
       File_Button := Gtk_File_Chooser_Button (Builder.Get_Object ("open"));
       Darea := Gtk_Drawing_Area (Builder.Get_Object ("drawingarea"));
