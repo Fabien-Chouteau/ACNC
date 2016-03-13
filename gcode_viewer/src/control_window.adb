@@ -2,7 +2,11 @@ with Gcode.Parser;
 with Gcode.Execution;
 with Gcode; use Gcode;
 with Ada.Float_Text_IO; use Ada.Float_Text_IO;
-with Ada.Text_IO;
+with Gtk.Radio_Button; use Gtk.Radio_Button;
+
+--------------------
+-- Control_Window --
+--------------------
 
 package body Control_Window is
 
@@ -29,8 +33,12 @@ package body Control_Window is
      (User_Data : access Gtkada_Builder_Record'Class) return Boolean;
    procedure Jog_Command (Axis : Axis_Name;
                           Distance : Float_Value);
+   function Get_Jog_Distance return Float_Value;
 
    My_Ctx : Gcode_Context_Ref := null;
+   Jog_Small : Gtk_Radio_Button := null;
+   Jog_Medium : Gtk_Radio_Button := null;
+   Jog_Big : Gtk_Radio_Button := null;
 
    -----------------
    -- Jog_Command --
@@ -39,16 +47,32 @@ package body Control_Window is
    procedure Jog_Command (Axis : Axis_Name;
                           Distance : Float_Value)
    is
-      Dist : String (1 .. (if Distance < 0.0 then 8 else 7));
+      Dist : String (1 .. 15);
    begin
       Put (Dist, Distance,
            Aft  => 5,
            Exp  => 0);
       Simulate_Gcode_Line ("G91");
       Simulate_Gcode_Line ("G01 " & To_Letter (Axis) & Dist);
-      Ada.Text_IO.Put_Line ("G01 " & To_Letter (Axis) & Dist);
       Simulate_Gcode_Line ("G90");
    end Jog_Command;
+
+   ----------------------
+   -- Get_Jog_Distance --
+   ----------------------
+
+   function Get_Jog_Distance return Float_Value is
+   begin
+      if Jog_Small /= null and then Jog_Small.Get_Active then
+         return 0.1;
+      elsif Jog_Medium /= null and then Jog_Medium.Get_Active then
+         return 1.0;
+      elsif Jog_Big /= null and then Jog_Big.Get_Active then
+         return 10.0;
+      else
+         return 0.0;
+      end if;
+   end Get_Jog_Distance;
 
    -------------------------
    -- Simulate_Gcode_Line --
@@ -89,7 +113,7 @@ package body Control_Window is
    is
       pragma Unreferenced (User_Data);
    begin
-      Jog_Command (X_Axis, -1.0);
+      Jog_Command (X_Axis, -Get_Jog_Distance);
       return False;
    end Left_Btn_Press;
 
@@ -103,7 +127,7 @@ package body Control_Window is
    is
       pragma Unreferenced (User_Data);
    begin
-      Jog_Command (X_Axis, 1.0);
+      Jog_Command (X_Axis, Get_Jog_Distance);
       return False;
    end Rigth_Btn_Press;
 
@@ -117,7 +141,7 @@ package body Control_Window is
    is
       pragma Unreferenced (User_Data);
    begin
-      Jog_Command (Y_Axis, 1.0);
+      Jog_Command (Y_Axis, Get_Jog_Distance);
       return False;
    end Fwd_Btn_Press;
 
@@ -131,7 +155,7 @@ package body Control_Window is
    is
       pragma Unreferenced (User_Data);
    begin
-      Jog_Command (Y_Axis, -1.0);
+      Jog_Command (Y_Axis, -Get_Jog_Distance);
       return False;
    end Bwd_Btn_Press;
 
@@ -145,7 +169,7 @@ package body Control_Window is
    is
       pragma Unreferenced (User_Data);
    begin
-      Jog_Command (Z_Axis, 1.0);
+      Jog_Command (Z_Axis, Get_Jog_Distance);
       return False;
    end Up_Btn_Press;
 
@@ -159,7 +183,7 @@ package body Control_Window is
    is
       pragma Unreferenced (User_Data);
    begin
-      Jog_Command (Z_Axis, -1.0);
+      Jog_Command (Z_Axis, -Get_Jog_Distance);
       return False;
    end Down_Btn_Press;
 
@@ -221,6 +245,11 @@ package body Control_Window is
       Register_Handler (Builder, "plus_btn_press", Plus_Btn_Press'Access);
       Register_Handler (Builder, "minus_btn_press", Minus_Btn_Press'Access);
       Register_Handler (Builder, "stop_btn_press", Stop_Btn_Press'Access);
+
+      Jog_Small := Gtk_Radio_Button (Builder.Get_Object ("jog_01mm"));
+      Jog_Medium := Gtk_Radio_Button (Builder.Get_Object ("jog_1mm"));
+      Jog_Big := Gtk_Radio_Button (Builder.Get_Object ("jog_10mm"));
+
    end Register_Handlers;
 
 end Control_Window;
