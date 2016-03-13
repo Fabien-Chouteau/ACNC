@@ -67,6 +67,9 @@ package body Stepper is
 
       Homing_Order_Index : Settings.Homing_Order_Range;
       --  Index of current homing axis in the Homing_Order array
+
+      Dwell_Timeout : Time := Time_First;
+      --  Expiration time of the dwell command
    end record;
 
    St_Data : Stepper_Data_Type;
@@ -251,31 +254,38 @@ package body Stepper is
             St_Data.Has_Segment := True;
             --  Process new segment
 
-            if St_Data.Seg.Homing then
-               --  Start homing
+            case St_Data.Seg.Kind is
+               when Homing_Segment =>
+                  --  Start homing
 
-               St_Data.Homing_Order_Index := Settings.Homing_Order'First;
-               Setup_Homing;
+                  St_Data.Homing_Order_Index := Settings.Homing_Order'First;
+                  Setup_Homing;
 
-            else
-               --  Motion segment
+               when Dwell_Segment =>
+                  St_Data.Dwell_Timeout :=
+                    Clock + To_Time_Span (St_Data.Seg.Dwell_Duration);
+                  St_Data.Set_Stepper_Frequency_Callback
+                    (Settings.Dwell_Stepper_Frequency);
+               when Motion_Segment =>
+                  --  Motion segment
 
-               St_Data.Step_Count := St_Data.Seg.Step_Count;
-               St_Data.Directions := St_Data.Seg.Directions;
+                  St_Data.Step_Count := St_Data.Seg.Step_Count;
+                  St_Data.Directions := St_Data.Seg.Directions;
 
-               --  Set frequency for this segment
-               St_Data.Set_Stepper_Frequency_Callback (St_Data.Seg.Frequency);
+                  --  Set frequency for this segment
+                  St_Data.Set_Stepper_Frequency_Callback
+                    (St_Data.Seg.Frequency);
 
-               if St_Data.Seg.New_Block then
-                  --  This is the first segment of a new block
+                  if St_Data.Seg.New_Block then
+                     --  This is the first segment of a new block
 
-                  --  Prep data for bresenham algorithm
-                  St_Data.Counter := (others => 0);
-                  St_Data.Block_Steps := St_Data.Seg.Block_Steps;
-                  St_Data.Block_Event_Count :=
-                    St_Data.Seg.Block_Event_Count;
-               end if;
-            end if;
+                     --  Prep data for bresenham algorithm
+                     St_Data.Counter := (others => 0);
+                     St_Data.Block_Steps := St_Data.Seg.Block_Steps;
+                     St_Data.Block_Event_Count :=
+                       St_Data.Seg.Block_Event_Count;
+                  end if;
+            end case;
          else
             --  No segment to exectute
             St_Data.Set_Stepper_Frequency_Callback
@@ -284,36 +294,41 @@ package body Stepper is
          end if;
       end if;
 
-      if St_Data.Seg.Homing then
-         return Homing;
-      else
-         --  Bresenham for each axis
-         for Axis in Axis_Name loop
-            St_Data.Counter (Axis) :=
-              St_Data.Counter (Axis) + St_Data.Block_Steps (Axis);
-
-            if St_Data.Counter (Axis) > St_Data.Block_Event_Count then
-               St_Data.Do_Step (Axis) := True;
-               St_Data.Counter (Axis) :=
-                 St_Data.Counter (Axis) - St_Data.Block_Event_Count;
-               if St_Data.Directions (Axis) = Forward then
-                  St_Data.Current_Position (Axis) :=
-                    St_Data.Current_Position (Axis) + 1;
-               else
-                  St_Data.Current_Position (Axis) :=
-                    St_Data.Current_Position (Axis) + 1;
-               end if;
-            else
-               St_Data.Do_Step (Axis) := False;
+      case St_Data.Seg.Kind is
+         when Homing_Segment =>
+            return Homing;
+         when Dwell_Segment =>
+            if Clock >= St_Data.Dwell_Timeout then
+               St_Data.Has_Segment := False;
             end if;
-         end loop;
+         when Motion_Segment =>
+            --  Bresenham for each axis
+            for Axis in Axis_Name loop
+               St_Data.Counter (Axis) :=
+                 St_Data.Counter (Axis) + St_Data.Block_Steps (Axis);
 
-         St_Data.Step_Count := St_Data.Step_Count - 1;
-         --  Check end of segement
-         if St_Data.Step_Count = 0 then
-            St_Data.Has_Segment := False;
-         end if;
-      end if;
+               if St_Data.Counter (Axis) > St_Data.Block_Event_Count then
+                  St_Data.Do_Step (Axis) := True;
+                  St_Data.Counter (Axis) :=
+                    St_Data.Counter (Axis) - St_Data.Block_Event_Count;
+                  if St_Data.Directions (Axis) = Forward then
+                     St_Data.Current_Position (Axis) :=
+                       St_Data.Current_Position (Axis) + 1;
+                  else
+                     St_Data.Current_Position (Axis) :=
+                       St_Data.Current_Position (Axis) + 1;
+                  end if;
+               else
+                  St_Data.Do_Step (Axis) := False;
+               end if;
+            end loop;
+
+            St_Data.Step_Count := St_Data.Step_Count - 1;
+            --  Check end of segement
+            if St_Data.Step_Count = 0 then
+               St_Data.Has_Segment := False;
+            end if;
+      end case;
 
       return True;
    end Execute_Step_Event;

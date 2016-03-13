@@ -5,6 +5,8 @@ package Settings is
 
    Idle_Stepper_Frequency : constant Gcode.Frequency_Value := 100.0;
    --  Frequency of the stepper when the machine is idle (Hz)
+   Dwell_Stepper_Frequency : constant Gcode.Frequency_Value := 100.0;
+   --  Frequency of the stepper when executing a dwell command (Hz)
 
    Step_Per_Millimeter : Gcode.Float_Position := (100.0, 100.0, 100.0);
 

@@ -13,24 +13,29 @@ package body Gcode.Planner is
 
    type Motion_Kind is (Motion_Line, Motion_Dwell, Motion_Homing);
 
-   type Motion_Block is record
-      Kind             : Motion_Kind;
-      Target           : Float_Position;
-      Dwell_Duration   : Duration;
+   type Motion_Block (Kind : Motion_Kind := Motion_Line) is record
+      case Kind is
+         when Motion_Line =>
+            Target           : Float_Position;
 
-      Relative_Steps   : Step_Position;
-      --  Steps for each axis
+            Relative_Steps   : Step_Position;
+            --  Steps for each axis
 
-      Directions       : Axis_Directions := (others => Forward);
-      --  Step direction for each axis
+            Directions       : Axis_Directions := (others => Forward);
+            --  Step direction for each axis
 
-      Step_Event_Count : Steps := 0;
-      --  Number of steps required to complete this block
+            Step_Event_Count : Steps := 0;
+            --  Number of steps required to complete this block
 
-      Entry_Speed   : Step_Speed := 0.0;
-      Nominal_Speed : Step_Speed := 0.0;
-      Acceleration  : Step_Acceleration := Step_Acceleration'Last;
-      Remaining_Distance : Float_Value := 0.0;
+            Entry_Speed   : Step_Speed := 0.0;
+            Nominal_Speed : Step_Speed := 0.0;
+            Acceleration  : Step_Acceleration := Step_Acceleration'Last;
+            Remaining_Distance : Float_Value := 0.0;
+         when Motion_Dwell =>
+            Dwell_Duration   : Duration;
+         when Motion_Homing =>
+            null;
+      end case;
    end record;
 
    package Motion_Buffer_Package is
@@ -68,7 +73,7 @@ package body Gcode.Planner is
       Target    : Float_Position;
       Feed_Rate : Step_Speed)
    is
-      M_Block : Motion_Block;
+      M_Block : Motion_Block (Kind => Motion_Line);
       Target_Steps : constant Step_Position := Milli_To_Step (Ctx, Target);
       Delta_MM : Float_Value;
 
@@ -76,7 +81,6 @@ package body Gcode.Planner is
       pragma Unreferenced (Unit_Vect);
       --  Unit vector of the block used for junction angle computation
    begin
-      M_Block.Kind := Motion_Line;
 
       M_Block.Relative_Steps := abs (Target_Steps - Planner_Position);
 
@@ -128,9 +132,8 @@ package body Gcode.Planner is
       Dwell_Duration : Duration)
    is
       pragma Unreferenced (Ctx);
-      M_Block : Motion_Block;
+      M_Block : Motion_Block (Kind => Motion_Dwell);
    begin
-      M_Block.Kind := Motion_Dwell;
       M_Block.Dwell_Duration := Dwell_Duration;
       Wait_And_Add_Motion (M_Block);
    end Planner_Add_Dwell;
@@ -144,9 +147,8 @@ package body Gcode.Planner is
       Feed_Rate : Step_Speed)
    is
       pragma Unreferenced (Ctx, Feed_Rate);
-      M_Block : Motion_Block;
+      M_Block : Motion_Block (Kind => Motion_Homing);
    begin
-      M_Block.Kind := Motion_Homing;
       Wait_And_Add_Motion (M_Block);
    end Planner_Add_Homing;
 
@@ -191,7 +193,6 @@ package body Gcode.Planner is
          case Motion.Kind is
             when Motion_Dwell =>
                Seg.New_Block := True;
-               Seg.Homing := False;
 
                --  100Hz gives us a 10ms precision
                Seg.Frequency :=
@@ -205,14 +206,14 @@ package body Gcode.Planner is
                Seg.Block_Event_Count := Steps'Last;
 
                --  Blocking call
-               Segment_Block_Buffer.Insert (Seg);
+               Segment_Block_Buffer.Insert
+                 ((Kind => Dwell_Segment,
+                   Dwell_Duration => Motion.Dwell_Duration));
 
             when Motion_Homing =>
-               Seg.Homing := True;
-               Seg.New_Block := True;
 
                --  Blocking call
-               Segment_Block_Buffer.Insert (Seg);
+               Segment_Block_Buffer.Insert ((Kind => Homing_Segment));
 
             when Motion_Line =>
                Remaining_Steps := Motion.Step_Event_Count;
@@ -222,7 +223,6 @@ package body Gcode.Planner is
 
                --  Signal this segment as first of the new block
                Seg.New_Block := True;
-               Seg.Homing := False;
 
                --  Segment values that will remain for the entire block
                Seg.Block_Steps := Motion.Relative_Steps;
