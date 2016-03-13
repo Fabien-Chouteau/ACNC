@@ -4,12 +4,12 @@ package body Gcode is
    -- To_Letter --
    ---------------
 
-   function To_Letter (Axis : Axis_Name) return String is
+   function To_Letter (Axis : Axis_Name) return Character is
    begin
       case Axis is
-         when X_Axis => return "X";
-         when Y_Axis => return "Y";
-         when Z_Axis => return "Z";
+         when X_Axis => return 'X';
+         when Y_Axis => return 'Y';
+         when Z_Axis => return 'Z';
       end case;
    end To_Letter;
 

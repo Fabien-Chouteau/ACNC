@@ -23,8 +23,10 @@ package Gcode is
    type Axis_Name is (X_Axis, Y_Axis, Z_Axis);
    type Direction is (Forward, Backward);
    type Axis_Directions is array (Axis_Name) of Direction;
+   type Positioning_Mode is (Absolute_Positioning, Relative_Positioning);
 
-   function To_Letter (Axis : Axis_Name) return String;
+   function To_Letter (Axis : Axis_Name) return Character;
+
    procedure Reverse_Dir (Dir : in out Direction);
 
    package Float_Coords is new Coords (Float_Value, Axis_Name);
@@ -33,7 +35,6 @@ package Gcode is
    subtype Steps is Integer;
    package Steps_Coords is new Coords (Steps, Axis_Name);
    subtype Step_Position is Steps_Coords.Position;
-
 
    type Step_Speed is new Float_Value;
    type Step_Acceleration is new Float_Value;

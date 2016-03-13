@@ -6,6 +6,7 @@ package Gcode.Context is
    type GContext is abstract tagged record
       Params : Parameters_Set;
       Unit : Coord_Unit := Millimeters;
+      Positioning : Positioning_Mode := Absolute_Positioning;
       B : Block;
       Fast_Feed_Rate   : Step_Speed := 2.0;
       Current_Feed_Rate : Step_Speed := 1.0;

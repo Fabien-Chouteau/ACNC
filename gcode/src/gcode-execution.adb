@@ -25,16 +25,18 @@ package body Gcode.Execution is
    is
       Target : Float_Position := Ctx.Virt_Position;
    begin
-      if Ctx.B ('X').Is_Set then
-         Target (X_Axis) := Ctx.B ('X').Value;
-      end if;
-      if Ctx.B ('Y').Is_Set then
-         Target (Y_Axis) := Ctx.B ('Y').Value;
-      end if;
-      if Ctx.B ('Z').Is_Set then
-         Target (Z_Axis) := Ctx.B ('Z').Value;
-      end if;
-
+      for Axis in Axis_Name loop
+         case Ctx.Positioning is
+         when Absolute_Positioning =>
+            if Ctx.B (To_Letter (Axis)).Is_Set then
+               Target (Axis) := Ctx.B (To_Letter (Axis)).Value;
+            end if;
+         when Relative_Positioning =>
+            if Ctx.B (To_Letter (Axis)).Is_Set then
+               Target (Axis) := Target (Axis) + Ctx.B (To_Letter (Axis)).Value;
+            end if;
+         end case;
+      end loop;
       Gcode.Motion.Move_Line (Ctx, Target, Feed_Rate);
    end Line_Command;
 
@@ -71,15 +73,19 @@ package body Gcode.Execution is
       Center      := Start_Point;
       End_Point   := Start_Point;
 
-      if Ctx.B ('X').Is_Set then
-         End_Point (X_Axis) := Ctx.B ('X').Value;
-      end if;
-      if Ctx.B ('Y').Is_Set then
-         End_Point (Y_Axis) := Ctx.B ('Y').Value;
-      end if;
-      if Ctx.B ('Z').Is_Set then
-         End_Point (Z_Axis) := Ctx.B ('Z').Value;
-      end if;
+      for Axis in Axis_Name loop
+         case Ctx.Positioning is
+         when Absolute_Positioning =>
+            if Ctx.B (To_Letter (Axis)).Is_Set then
+               End_Point (Axis) := Ctx.B (To_Letter (Axis)).Value;
+            end if;
+         when Relative_Positioning =>
+            if Ctx.B (To_Letter (Axis)).Is_Set then
+               End_Point (Axis) := End_Point (Axis) +
+                 Ctx.B (To_Letter (Axis)).Value;
+            end if;
+         end case;
+      end loop;
 
       if Start_Point (Z_Axis) /= End_Point (Z_Axis) then
          Ctx.Log (Warning, "Z movement not supported in circular motion");
@@ -188,6 +194,8 @@ package body Gcode.Execution is
             when 20 => Ctx.Unit := Inches;
             when 21 => Ctx.Unit := Millimeters;
             when 28 => Return_To_Home (Ctx, Feed);
+            when 90 => Ctx.Positioning := Absolute_Positioning;
+            when 91 => Ctx.Positioning := Relative_Positioning;
             when others =>
                Ctx.Report_Error (Line, "Unknown G code " & Int_Part'Img, 0, 0);
                return False;
