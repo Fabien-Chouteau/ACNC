@@ -33,7 +33,7 @@ package body Gcode_Controller is
          Ctx.Put_Line ("Gcode execution failed");
       end if;
    exception
-      when E : Gcode.Error.Gcode_Exception =>
+      when Gcode.Error.Gcode_Exception =>
          Ctx.Put_Line ("Gcode exception");
       when others =>
          Ctx.Put_Line ("other exception");

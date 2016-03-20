@@ -18,7 +18,7 @@ private
 
    M1_Not_Enable_GPIO : GPIO_Point renames PD14;
    M2_Not_Enable_GPIO : GPIO_Point renames PB14;
-   M3_Not_Enable_GPIO : GPIO_Point renames PE15;
+   M3_Not_Enable_GPIO : GPIO_Point renames PE14;
 
    Step_GPIO : constant GPIO_Point_Per_Axis :=
      (X_Axis => M2_Step_GPIO,
@@ -34,6 +34,17 @@ private
      (X_Axis => M2_Not_Enable_GPIO,
       Y_Axis => M1_Not_Enable_GPIO,
       Z_Axis => M3_Not_Enable_GPIO);
+
+   Home_GPIO : constant GPIO_Point_Per_Axis :=
+     (X_Axis => PC11,
+      Y_Axis => PD2,
+      Z_Axis => PD0);
+
+   Home_Switch_Polarity : constant array (Axis_Name) of Boolean :=
+     (X_Axis => True,
+      Y_Axis => True,
+      Z_Axis => False);
+
 
    Analysis_Point : constant GPIO_Point := PD13;
    --  This GPIO can be used to mesure the time spent en step event

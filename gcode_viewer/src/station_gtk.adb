@@ -295,6 +295,7 @@ package body Station_Gtk is
                Open (Serial, Port_Name (Serial_Name.Get_Active_Text));
                Set (Serial, Data_Rate'Value (Serial_Baud.Get_Active_Text));
                Execute_Menu.Set_Sensitive (True);
+               Control_Window.Set_Serial (Serial'Access);
             exception
                when Serial_Error =>
                   Ctx.Log (Error, "Cannot open serial port" &

@@ -204,6 +204,10 @@ package body Machine_Motion_history is
       Machine_Sim.Draw_History (Cr, Zoom);
    end Draw_History;
 
+   -------------------
+   -- Clear_History --
+   -------------------
+
    procedure Clear_History is
    begin
       Machine_Sim.Clear_History;

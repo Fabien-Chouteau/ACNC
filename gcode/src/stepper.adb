@@ -3,7 +3,6 @@ with Ada.Real_Time.Timing_Events; use Ada.Real_Time.Timing_Events;
 with Gcode.Planner; use Gcode.Planner;
 with System;
 with Settings; use Settings;
-with Gcode.Context; use Gcode.Context;
 
 package body Stepper is
 
@@ -183,9 +182,10 @@ package body Stepper is
       St_Data.Homing_Axis  :=
         Settings.Homing_Order (St_Data.Homing_Order_Index);
 
-      St_Data.Set_Stepper_Frequency_Callback
-        (Frequency_Value (Homing_Approach_Feed_Rate *
-             Step_Per_Millimeter (St_Data.Homing_Axis)));
+      --  Failing with GNAT_GPL_2015
+--        St_Data.Set_Stepper_Frequency_Callback
+--          (Frequency_Value (Homing_Approach_Feed_Rate *
+--               Step_Per_Millimeter (St_Data.Homing_Axis)));
 
       St_Data.Homing_State := Homing_Approach;
 
@@ -214,9 +214,11 @@ package body Stepper is
                Reverse_Dir (St_Data.Directions (St_Data.Homing_Axis));
 
                --  Switch to precission feed rate
-               St_Data.Set_Stepper_Frequency_Callback
-                 (Frequency_Value (Homing_Precision_Feed_Rate *
-                      Step_Per_Millimeter (St_Data.Homing_Axis)));
+
+               --  Failing with GNAT_GPL_2015
+--                 St_Data.Set_Stepper_Frequency_Callback
+--                   (Frequency_Value (Homing_Precision_Feed_Rate *
+--                        Step_Per_Millimeter (St_Data.Homing_Axis)));
 
             end if;
 

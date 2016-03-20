@@ -8,8 +8,20 @@ project Gcode is
 --     for Library_Interface use ("gcode", "gcode.context", "gcode.parser",
 --                                "gcode.parameters", "gcode.execution", "coords");
 
+   type Build_Type is ("Debug", "Release");
+   Build : Build_Type := external ("Build", "Debug");
+
+   Build_Switches := ("-gnat12", "-gnatwa", "-gnatwe", "-gnatQ",
+                      "-gnatw.X");
+   case Build is
+      when "Debug" =>
+         Build_Switches := Build_Switches & ("-g", "-O0");
+      when "Release" =>
+         Build_Switches := Build_Switches & ("-O3");
+   end case;
+
    package Compiler is
-      for Default_Switches ("ada") use ("-gnatwa", "-gnatQ", "-gnatw.X");
+      for Default_Switches ("ada") use Build_Switches;
    end Compiler;
 
 end Gcode;

@@ -13,5 +13,20 @@ project STM32F4_DISCO_CNC_Controller is
    type LOADER_Type is ("RAM", "ROM");
    LOADER : LOADER_Type := external ("LOADER", "ROM");
 
+   type Build_Type is ("Debug", "Release");
+   Build : Build_Type := external ("Build", "Debug");
+
+   Build_Switches := ("-gnat12", "-gnatwa", "-gnatwe",
+                      "-gnatw.X"); --  "-gnatyg", "-gnaty-d",
+   case Build is
+      when "Debug" =>
+         Build_Switches := Build_Switches & ("-g", "-O0");
+      when "Release" =>
+         Build_Switches := Build_Switches & ("-O3");
+   end case;
+
+   package Compiler is
+      for Default_Switches ("ada") use Build_Switches;
+   end Compiler;
 end STM32F4_DISCO_CNC_Controller;
 

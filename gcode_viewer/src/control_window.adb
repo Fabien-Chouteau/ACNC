@@ -3,14 +3,12 @@ with Gcode.Execution;
 with Gcode; use Gcode;
 with Ada.Float_Text_IO; use Ada.Float_Text_IO;
 with Gtk.Radio_Button; use Gtk.Radio_Button;
-
---------------------
--- Control_Window --
---------------------
+with Ada.Text_IO;
 
 package body Control_Window is
 
    procedure Simulate_Gcode_Line (Line : String);
+   procedure Send_Gcode_Line (Line : String);
    function Home_Btn_Press
      (User_Data : access Gtkada_Builder_Record'Class) return Boolean;
    function Left_Btn_Press
@@ -36,6 +34,7 @@ package body Control_Window is
    function Get_Jog_Distance return Float_Value;
 
    My_Ctx : Gcode_Context_Ref := null;
+   My_Serial : Serial_Port_Ref := null;
    Jog_Small : Gtk_Radio_Button := null;
    Jog_Medium : Gtk_Radio_Button := null;
    Jog_Big : Gtk_Radio_Button := null;
@@ -52,9 +51,15 @@ package body Control_Window is
       Put (Dist, Distance,
            Aft  => 5,
            Exp  => 0);
-      Simulate_Gcode_Line ("G91");
-      Simulate_Gcode_Line ("G01 " & To_Letter (Axis) & Dist);
-      Simulate_Gcode_Line ("G90");
+      if My_Serial /= null then
+         Send_Gcode_Line ("G91");
+         Send_Gcode_Line ("G01 " & To_Letter (Axis) & Dist);
+         Send_Gcode_Line ("G90");
+      else
+         Simulate_Gcode_Line ("G91");
+         Simulate_Gcode_Line ("G01 " & To_Letter (Axis) & Dist);
+         Simulate_Gcode_Line ("G90");
+      end if;
    end Jog_Command;
 
    ----------------------
@@ -73,6 +78,21 @@ package body Control_Window is
          return 0.0;
       end if;
    end Get_Jog_Distance;
+
+   ---------------------
+   -- Send_Gcode_Line --
+   ---------------------
+
+   procedure Send_Gcode_Line (Line : String) is
+      Data : String (1 .. 10);
+   begin
+      if My_Serial /= null then
+         String'Write (My_Serial, Line & ASCII.LF & ASCII.CR);
+         String'Read (My_Serial, Data);
+         Ada.Text_IO.Put_Line ("Len :" & Data'Length'Img);
+         Ada.Text_IO.Put_Line ("Data : '" & Data & "'");
+      end if;
+   end Send_Gcode_Line;
 
    -------------------------
    -- Simulate_Gcode_Line --
@@ -251,5 +271,14 @@ package body Control_Window is
       Jog_Big := Gtk_Radio_Button (Builder.Get_Object ("jog_10mm"));
 
    end Register_Handlers;
+
+   ----------------
+   -- Set_Serial --
+   ----------------
+
+   procedure Set_Serial (Serial : Serial_Port_Ref) is
+   begin
+      My_Serial := Serial;
+   end Set_Serial;
 
 end Control_Window;

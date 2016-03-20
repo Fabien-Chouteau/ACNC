@@ -7,8 +7,8 @@ with Settings;
 package body Step_Control is
 
    Task_Sync   : Ada.Synchronous_Task_Control.Suspension_Object;
-   Current_Pos : Step_Position := (others => 0);
    Current_Dir : Axis_Directions := (others => Forward);
+   pragma Unreferenced (Current_Dir);
    Task_Period : Time_Span := Milliseconds (500);
 
    procedure Set_Step_Direction (Axis : Axis_Name;
@@ -46,6 +46,17 @@ package body Step_Control is
          Clear (Step_GPIO (Axis));
          Clear (Not_Enable_GPIO (Axis));
          Set_Step_Direction (Axis, Forward);
+      end loop;
+
+      --  Home switches
+      Configuration.Mode        := Mode_In;
+      Configuration.Output_Type := Push_Pull;
+      Configuration.Speed       := Speed_100MHz;
+      Configuration.Resistors   := Pull_Up;
+
+      for Axis in Axis_Name loop
+         Enable_Clock (Home_GPIO (Axis).Port.all);
+         Configure_IO (Home_GPIO (Axis), Configuration);
       end loop;
 
       Enable_Clock (Analysis_Point.Port.all);
@@ -107,9 +118,7 @@ package body Step_Control is
 
    function Home_Test (Axis : Axis_Name) return Boolean is
    begin
-      --  Not implemented
-      raise Program_Error;
-      return False;
+      return Set (Home_GPIO (Axis)) = Home_Switch_Polarity (Axis);
    end Home_Test;
 
    ---------------

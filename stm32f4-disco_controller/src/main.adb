@@ -1,7 +1,6 @@
 with Gcode_Controller;
 with Step_Control;
 with Coms;
-with Interfaces.C;
 
 procedure Main is
    C : Character;
