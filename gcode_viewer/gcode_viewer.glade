@@ -146,6 +146,7 @@
   <object class="GtkTextBuffer" id="textbuffer">
     <property name="tag_table">texttagtable1</property>
     <property name="text" translatable="yes">G90 ; Absolute positioning
+M17 ; Enable motors
 G28 ; Homing
 G00 Z5
 G00 X20 Y30
@@ -155,6 +156,7 @@ G02 X20 Y20 J5
 G04 P2 ; Dwell 2s
 G03 X20 Y30 J5
 G28 ; Homing
+M18; Disable motors
 </property>
   </object>
   <object class="GtkWindow" id="window1">
@@ -485,7 +487,50 @@ G28 ; Homing
                       </packing>
                     </child>
                     <child>
-                      <placeholder/>
+                      <object class="GtkBox" id="box2">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <child>
+                          <object class="GtkButton" id="enable_btn">
+                            <property name="label" translatable="yes">Enable</property>
+                            <property name="use_action_appearance">False</property>
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="receives_default">True</property>
+                            <property name="tooltip_text" translatable="yes">Disable all stepper motors</property>
+                            <property name="use_action_appearance">False</property>
+                            <signal name="button-press-event" handler="enable_btn_press" swapped="no"/>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkButton" id="disable_btn">
+                            <property name="label" translatable="yes">Disable</property>
+                            <property name="use_action_appearance">False</property>
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="receives_default">True</property>
+                            <property name="tooltip_text" translatable="yes">Disable all stepper motors</property>
+                            <property name="use_action_appearance">False</property>
+                            <signal name="button-press-event" handler="disable_btn_press" swapped="no"/>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">1</property>
+                          </packing>
+                        </child>
+                      </object>
+                      <packing>
+                        <property name="left_attach">0</property>
+                        <property name="top_attach">2</property>
+                        <property name="width">1</property>
+                        <property name="height">1</property>
+                      </packing>
                     </child>
                   </object>
                   <packing>

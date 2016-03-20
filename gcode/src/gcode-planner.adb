@@ -11,7 +11,8 @@ package body Gcode.Planner is
    use type Float_Position;
    use type Step_Position;
 
-   type Motion_Kind is (Motion_Line, Motion_Dwell, Motion_Homing);
+   type Motion_Kind is (Motion_Line, Motion_Dwell, Motion_Homing,
+                        Motion_Enable_Motors);
 
    type Motion_Block (Kind : Motion_Kind := Motion_Line) is record
       case Kind is
@@ -35,6 +36,8 @@ package body Gcode.Planner is
             Dwell_Duration   : Duration;
          when Motion_Homing =>
             null;
+         when Motion_Enable_Motors =>
+            Enable : Motor_Enable_Array;
       end case;
    end record;
 
@@ -153,6 +156,21 @@ package body Gcode.Planner is
       Wait_And_Add_Motion (M_Block);
    end Planner_Add_Homing;
 
+   ---------------------------
+   -- Planner_Enable_Motors --
+   ---------------------------
+
+   procedure Planner_Enable_Motors
+     (Ctx    : in out GContext'Class;
+      Enable : Motor_Enable_Array)
+   is
+      pragma Unreferenced (Ctx);
+      M_Block : Motion_Block (Kind => Motion_Enable_Motors);
+   begin
+      M_Block.Enable := Enable;
+      Wait_And_Add_Motion (M_Block);
+   end Planner_Enable_Motors;
+
    ----------------------
    -- Get_Next_Segment --
    ----------------------
@@ -216,6 +234,9 @@ package body Gcode.Planner is
                --  Blocking call
                Segment_Block_Buffer.Insert ((Kind => Homing_Segment));
 
+            when Motion_Enable_Motors =>
+               Segment_Block_Buffer.Insert ((Kind => Enable_Motors_Segment,
+                                             Enable => Motion.Enable));
             when Motion_Line =>
                Remaining_Steps := Motion.Step_Event_Count;
 

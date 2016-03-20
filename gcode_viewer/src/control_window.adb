@@ -246,6 +246,44 @@ package body Control_Window is
       return False;
    end Stop_Btn_Press;
 
+   ----------------------
+   -- Enable_Btn_Press --
+   ----------------------
+
+   function Enable_Btn_Press
+     (User_Data : access Gtkada_Builder_Record'Class)
+      return Boolean
+   is
+      pragma Unreferenced (User_Data);
+      Line : constant String := "M17 ; Enable motors";
+   begin
+      if Connected then
+         Send_Gcode_Line (Line);
+      else
+         Simulate_Gcode_Line (Line);
+      end if;
+      return False;
+   end Enable_Btn_Press;
+
+   -----------------------
+   -- Disable_Btn_Press --
+   -----------------------
+
+   function Disable_Btn_Press
+     (User_Data : access Gtkada_Builder_Record'Class)
+      return Boolean
+   is
+      pragma Unreferenced (User_Data);
+      Line : constant String := "M18 ; Disable motors";
+   begin
+      if Connected then
+         Send_Gcode_Line (Line);
+      else
+         Simulate_Gcode_Line (Line);
+      end if;
+      return False;
+   end Disable_Btn_Press;
+
    -----------------------
    -- Register_Handlers --
    -----------------------
@@ -265,6 +303,9 @@ package body Control_Window is
       Register_Handler (Builder, "plus_btn_press", Plus_Btn_Press'Access);
       Register_Handler (Builder, "minus_btn_press", Minus_Btn_Press'Access);
       Register_Handler (Builder, "stop_btn_press", Stop_Btn_Press'Access);
+      Register_Handler (Builder, "enable_btn_press", Enable_Btn_Press'Access);
+      Register_Handler (Builder, "disable_btn_press",
+                        Disable_Btn_Press'Access);
 
       Jog_Small := Gtk_Radio_Button (Builder.Get_Object ("jog_01mm"));
       Jog_Medium := Gtk_Radio_Button (Builder.Get_Object ("jog_1mm"));

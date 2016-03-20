@@ -44,6 +44,8 @@ package Gcode is
    type Step_Speed is new Float_Value;
    type Step_Acceleration is new Float_Value;
 
+   type Motor_Enable_Array is array (Axis_Name) of Boolean;
+
    function Distance (A, B : Float_Position) return Float_Value;
    function Image (Val : Float_Value) return String;
    function Image (Pos : Float_Position) return String;

@@ -18,6 +18,8 @@ package body Stepper is
                                       Dir : Direction) is null;
    procedure Dummy_Set_Stepper_Frequency (Freq_Hz : Frequency_Value) is null;
    function Dummy_Home_Test (Axis : Axis_Name) return Boolean is (False);
+   procedure Dummy_Motor_Enable  (Axis : Axis_Name; Enable : Boolean) is null;
+
    procedure Setup_Homing;
    function Homing return Boolean;
 
@@ -55,6 +57,9 @@ package body Stepper is
 
       Home_Test_Callback : Home_Test_Proc :=
         Dummy_Home_Test'Access;
+
+      Motor_Enable_Callback : Motor_Enable_Proc :=
+        Dummy_Motor_Enable'Access;
 
       Current_Position : Step_Position := (others => 0);
       --  Keep track of the actuall position of the machine
@@ -290,6 +295,12 @@ package body Stepper is
                      St_Data.Block_Event_Count :=
                        St_Data.Seg.Block_Event_Count;
                   end if;
+               when Enable_Motors_Segment =>
+                  for Axis in Axis_Name loop
+                     St_Data.Motor_Enable_Callback
+                       (Axis, St_Data.Seg.Enable (Axis));
+                  end loop;
+                  St_Data.Has_Segment := False;
             end case;
          else
             --  No segment to exectute
@@ -333,6 +344,8 @@ package body Stepper is
             if St_Data.Step_Count = 0 then
                St_Data.Has_Segment := False;
             end if;
+         when Enable_Motors_Segment =>
+            null;
       end case;
 
       return True;
@@ -347,7 +360,8 @@ package body Stepper is
       Clear_Step            : Clear_Step_Pin_Proc;
       Set_Direcetion        : Set_Direction_Pin_Proc;
       Set_Stepper_Frequency : Set_Stepper_Frequency_Proc;
-      Home_Test             : Home_Test_Proc)
+      Home_Test             : Home_Test_Proc;
+      Motor_Enable          : Motor_Enable_Proc)
    is
    begin
       St_Data.Set_Step_Callback := Set_Step;
@@ -355,6 +369,7 @@ package body Stepper is
       St_Data.Set_Direction_Callback := Set_Direcetion;
       St_Data.Set_Stepper_Frequency_Callback := Set_Stepper_Frequency;
       St_Data.Home_Test_Callback := Home_Test;
+      St_Data.Motor_Enable_Callback := Motor_Enable;
    end Set_Stepper_Callbacks;
 
 end Stepper;

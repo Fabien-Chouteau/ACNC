@@ -17,7 +17,12 @@ package Gcode.Planner is
      (Ctx       : in out GContext'Class;
       Feed_Rate : Step_Speed);
 
-   type Segment_Kind is (Motion_Segment, Homing_Segment, Dwell_Segment);
+   procedure Planner_Enable_Motors
+     (Ctx    : in out GContext'Class;
+      Enable : Motor_Enable_Array);
+
+   type Segment_Kind is (Motion_Segment, Homing_Segment, Dwell_Segment,
+                         Enable_Motors_Segment);
 
    type Segment (Kind : Segment_Kind := Motion_Segment) is record
       case Kind is
@@ -43,6 +48,8 @@ package Gcode.Planner is
             null;
          when Dwell_Segment =>
             Dwell_Duration : Duration;
+         when Enable_Motors_Segment =>
+            Enable : Motor_Enable_Array;
       end case;
    end record;
 

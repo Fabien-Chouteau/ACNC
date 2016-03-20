@@ -159,6 +159,10 @@ package body Gcode.Execution is
          Int_Part := Integer (Float_Value'Floor (Ctx.B ('M').Value));
          Frac_Part := Integer (Float_Value'Floor (Ctx.B ('M').Value * 100.0));
          case Int_Part is
+            when 17 => --  Enable Stepper
+               Gcode.Planner.Planner_Enable_Motors (Ctx, (others => True));
+            when 18 => --  Disable Stepper
+               Gcode.Planner.Planner_Enable_Motors (Ctx, (others => False));
             when others =>
                Ctx.Report_Error (Line, "Unknown M code " & Int_Part'Img, 0, 0);
                return False;
@@ -203,6 +207,7 @@ package body Gcode.Execution is
                return False;
          end case;
       end if;
+
       return True;
    end Execute;
 end Gcode.Execution;

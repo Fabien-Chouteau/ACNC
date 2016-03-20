@@ -25,9 +25,12 @@ package body Machine_Motion_history is
    procedure Set_Step_Pin (Axis : Axis_Name);
    procedure Set_Stepper_Frequency (Freq_Hz : Frequency_Value);
    function Home_Test (Axis : Axis_Name) return Boolean;
+   procedure Motor_Enable (Axis : Axis_Name;
+                           Enable : Boolean);
 
    Task_Period : Time_Span := Milliseconds (500);
    Time_Factor : Integer := 10;
+   Motor_Enabled : Motor_Enable_Array := (others => False);
 
    -----------------
    -- Machine_Sim --
@@ -36,8 +39,7 @@ package body Machine_Motion_history is
    protected Machine_Sim is
       procedure Set_Step_Direction (Axis : Axis_Name;
                                     Dir : Direction);
-      procedure Clear_Step_Pin (Axis : Axis_Name);
-      procedure Set_Step_Pin (Axis : Axis_Name);
+      procedure Make_Step (Axis : Axis_Name);
       function Current_Position return Gcode.Step_Position;
       procedure Draw_History (Cr : Cairo_Context; Zoom : Gdouble);
       procedure Clear_History;
@@ -48,11 +50,11 @@ package body Machine_Motion_history is
    end Machine_Sim;
 
    protected body Machine_Sim is
-      ------------------
-      -- Set_Step_Pin --
-      ------------------
+      ---------------
+      -- Make_Step --
+      ---------------
 
-      procedure Set_Step_Pin (Axis : Axis_Name) is
+      procedure Make_Step (Axis : Axis_Name) is
          S : constant Steps :=
            (if Current_Dir (Axis) = Forward then 1 else -1);
       begin
@@ -62,16 +64,7 @@ package body Machine_Motion_history is
 --           if Axis /= Z_Axis then
          History.Append (Current_Position);
 --           end if;
-      end Set_Step_Pin;
-
-      --------------------
-      -- Clear_Step_Pin --
-      --------------------
-
-      procedure Clear_Step_Pin (Axis : Axis_Name) is
-      begin
-         null;
-      end Clear_Step_Pin;
+      end Make_Step;
 
       ------------------------
       -- Set_Step_Direction --
@@ -143,7 +136,9 @@ package body Machine_Motion_history is
 
    procedure Set_Step_Pin (Axis : Axis_Name) is
    begin
-      Machine_Sim.Set_Step_Pin (Axis);
+      if Motor_Enabled (Axis) then
+         Machine_Sim.Make_Step (Axis);
+      end if;
    end Set_Step_Pin;
 
    --------------------
@@ -151,8 +146,10 @@ package body Machine_Motion_history is
    --------------------
 
    procedure Clear_Step_Pin (Axis : Axis_Name) is
+      pragma Unreferenced (Axis);
    begin
-      Machine_Sim.Clear_Step_Pin (Axis);
+      --  This is not required for simulation
+      null;
    end Clear_Step_Pin;
 
    ------------------------
@@ -187,6 +184,16 @@ package body Machine_Motion_history is
          return Machine_Sim.Current_Position (Axis) < 0;
       end if;
    end Home_Test;
+
+   ------------------
+   -- Motor_Enable --
+   ------------------
+
+   procedure Motor_Enable (Axis : Axis_Name;
+                           Enable : Boolean) is
+   begin
+      Motor_Enabled (Axis) := Enable;
+   end Motor_Enable;
 
    ----------------------
    -- Current_Position --
@@ -253,6 +260,7 @@ begin
       Clear_Step            => Clear_Step_Pin'Access,
       Set_Direcetion        => Set_Step_Direction'Access,
       Set_Stepper_Frequency => Set_Stepper_Frequency'Access,
-      Home_Test             => Home_Test'Access);
+      Home_Test             => Home_Test'Access,
+      Motor_Enable          => Motor_Enable'Access);
 
 end Machine_Motion_history;
