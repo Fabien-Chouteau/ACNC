@@ -17,6 +17,8 @@ package body Step_Control is
    procedure Set_Step_Pin (Axis : Axis_Name);
    procedure Set_Stepper_Frequency (Freq_Hz : Frequency_Value);
    function Home_Test (Axis : Axis_Name) return Boolean;
+   procedure Motor_Enable (Axis : Axis_Name;
+                           Enable : Boolean);
 
    ---------------
    -- Initalize --
@@ -44,7 +46,10 @@ package body Step_Control is
 
          --  Init value
          Clear (Step_GPIO (Axis));
-         Clear (Not_Enable_GPIO (Axis));
+
+         --  Motors are disabled at init
+         Set (Not_Enable_GPIO (Axis));
+
          Set_Step_Direction (Axis, Forward);
       end loop;
 
@@ -121,6 +126,20 @@ package body Step_Control is
       return Set (Home_GPIO (Axis)) = Home_Switch_Polarity (Axis);
    end Home_Test;
 
+   ------------------
+   -- Motor_Enable --
+   ------------------
+
+   procedure Motor_Enable (Axis : Axis_Name;
+                           Enable : Boolean) is
+   begin
+      if Enable then
+         Clear (Not_Enable_GPIO (Axis));
+      else
+         Set (Not_Enable_GPIO (Axis));
+      end if;
+   end Motor_Enable;
+
    ---------------
    -- Step_Task --
    ---------------
@@ -139,7 +158,8 @@ package body Step_Control is
          Clear_Step            => Clear_Step_Pin'Access,
          Set_Direcetion        => Set_Step_Direction'Access,
          Set_Stepper_Frequency => Set_Stepper_Frequency'Access,
-         Home_Test             => Home_Test'Access);
+         Home_Test             => Home_Test'Access,
+         Motor_Enable          => Motor_Enable'Access);
 
       loop
          Next_Period := Next_Period + Task_Period;
