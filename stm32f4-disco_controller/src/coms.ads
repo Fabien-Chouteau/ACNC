@@ -19,6 +19,8 @@ private
 
    TX_Pin : constant GPIO_Pin := Pin_2;
    RX_Pin : constant GPIO_Pin := Pin_3;
+   CTS_Pin : constant GPIO_Pin := Pin_0;
+   RTS_Pin : constant GPIO_Pin := Pin_1;
 
    Controller : STM32.Device.DMA_Controller renames STM32.Device.DMA_1;
 

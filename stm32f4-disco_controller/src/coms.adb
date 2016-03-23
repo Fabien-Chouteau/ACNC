@@ -24,12 +24,12 @@ package body Coms is
 
       Configure_IO
         (Port   => IO_Port,
-         Pins   => Rx_Pin & Tx_Pin,
+         Pins   => Rx_Pin & Tx_Pin & CTS_Pin & RTS_Pin,
          Config => Configuration);
 
       Configure_Alternate_Function
         (Port => IO_Port,
-         Pins => Rx_Pin & Tx_Pin,
+         Pins => Rx_Pin & Tx_Pin & CTS_Pin & RTS_Pin,
          AF   => Transceiver_AF);
    end Initialize_GPIO_Port_Pins;
 
@@ -48,7 +48,7 @@ package body Coms is
       Set_Stop_Bits    (Transceiver, Stopbits_1);
       Set_Word_Length  (Transceiver, Word_Length_8);
       Set_Parity       (Transceiver, No_Parity);
-      Set_Flow_Control (Transceiver, No_Flow_Control);
+      Set_Flow_Control (Transceiver, RTS_CTS_Flow_Control);
    end Initialize_USART;
 
    --------------------
