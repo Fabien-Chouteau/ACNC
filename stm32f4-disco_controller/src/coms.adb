@@ -1,12 +1,25 @@
 with Ada.Unchecked_Conversion;
 with STM32; use STM32;
-with STM32_SVD;
+with Interfaces.Bit_Types; use Interfaces.Bit_Types;
 
 package body Coms is
 
-   use type STM32_SVD.UInt9;
-
    type DMA_Data is array (Integer range <>) of Interfaces.Unsigned_8;
+
+   procedure Ready_To_Receive (Enable : Boolean);
+
+   ----------------------
+   -- Ready_To_Receive --
+   ----------------------
+
+   procedure Ready_To_Receive (Enable : Boolean) is
+   begin
+      if Enable then
+         RTS_Pin.Clear;
+      else
+         RTS_Pin.Set;
+      end if;
+   end Ready_To_Receive;
 
    -------------------------------
    -- Initialize_GPIO_Port_Pins --
@@ -14,8 +27,9 @@ package body Coms is
 
    procedure Initialize_GPIO_Port_Pins is
       Configuration : GPIO_Port_Configuration;
+      Points : constant GPIO_Points := Rx_Pin & Tx_Pin & CTS_Pin;
    begin
-      Enable_Clock (IO_Port);
+      Enable_Clock (Points);
 
       Configuration.Mode := Mode_AF;
       Configuration.Speed := Speed_50MHz;
@@ -23,14 +37,16 @@ package body Coms is
       Configuration.Resistors := Pull_Up;
 
       Configure_IO
-        (Port   => IO_Port,
-         Pins   => Rx_Pin & Tx_Pin & CTS_Pin & RTS_Pin,
-         Config => Configuration);
+        (Points, Configuration);
 
       Configure_Alternate_Function
-        (Port => IO_Port,
-         Pins => Rx_Pin & Tx_Pin & CTS_Pin & RTS_Pin,
-         AF   => Transceiver_AF);
+        (Points, Transceiver_AF);
+
+      --  Manual RTS controll
+      Configuration.Mode := Mode_Out;
+      Configuration.Speed := Speed_50MHz;
+      RTS_Pin.Configure_IO (Configuration);
+      Ready_To_Receive (False);
    end Initialize_GPIO_Port_Pins;
 
    ----------------------
@@ -48,7 +64,10 @@ package body Coms is
       Set_Stop_Bits    (Transceiver, Stopbits_1);
       Set_Word_Length  (Transceiver, Word_Length_8);
       Set_Parity       (Transceiver, No_Parity);
-      Set_Flow_Control (Transceiver, RTS_CTS_Flow_Control);
+      Set_Flow_Control (Transceiver, CTS_Flow_Control);
+      --  Because of FTDI's potential 3 character overrun
+      --  (http://www.ftdichip.com/Support/FAQs.htm#HwGen3)
+      --  RTS controll is manuall.
    end Initialize_USART;
 
    --------------------
@@ -88,6 +107,7 @@ package body Coms is
       Initialize_DMA;
       Enable (Transceiver);
       Enable_Interrupts (Transceiver, Source => Received_Data_Not_Empty);
+      Ready_To_Receive (True);
    end Initalize;
 
    ----------------------------
@@ -99,6 +119,11 @@ package body Coms is
         (Interfaces.Unsigned_8, Character);
       Rx_Byte : Interfaces.Unsigned_8;
    begin
+      if Status (Transceiver, Overrun_Error_Indicated) then
+         Clear_Status (Transceiver, Overrun_Error_Indicated);
+         raise Program_Error with "USART overrun";
+      end if;
+
       Rx_IRQ_Handler.Await_Byte_Reception (Rx_Byte);
       C := Data_To_Character (Rx_Byte);
    end UART_Get_Data_Blocking;
@@ -123,7 +148,7 @@ package body Coms is
          Tx_Stream,
          Source      => Source_Block'Address,
          Destination => Data_Register_Address (Transceiver),
-         Data_Count  => Half_Word (Source_Block'Length));
+         Data_Count  => Short (Source_Block'Length));
       --  also enables the stream
 
       Enable_DMA_Transmit_Requests (Transceiver);
@@ -272,12 +297,13 @@ package body Coms is
       --------------------------
 
       entry Await_Byte_Reception (Rx_Byte : out Interfaces.Unsigned_8)
-        when Byte_Avalaible is
+        when Not_Empty is
       begin
-         --  Dequeue (Rx_Queue, Rx_Byte);
-         --  Byte_Avalaible := not Is_Empty (Rx_Queue);
-         Rx_Byte := Data;
-         Byte_Avalaible := False;
+         Remove (Rx_Byte);
+         --  Manual RTS controll to handle FTDI 0-3 char overrun
+         if Extent <= 3 then
+            Ready_To_Receive (True);
+         end if;
       end Await_Byte_Reception;
 
       -----------------
@@ -287,15 +313,68 @@ package body Coms is
       procedure IRQ_Handler is
          Received_Byte : Interfaces.Unsigned_8;
       begin
-         if Status (Transceiver, Read_Data_Register_Not_Empty) then
+         while Status (Transceiver, Read_Data_Register_Not_Empty) loop
             Received_Byte :=
               Interfaces.Unsigned_8 (Current_Input (Transceiver) and 16#FF#);
             Clear_Status (Transceiver, Read_Data_Register_Not_Empty);
-            --  Enqueue (Rx_Queue, Received_Byte);
-            Data := Received_Byte;
-            Byte_Avalaible := True;
-         end if;
+            Insert (Received_Byte);
+
+            --  Manual RTS controll to handle FTDI 0-3 char overrun
+            if Extent >= Buffer_Capacity - 4 then
+               Ready_To_Receive (False);
+            end if;
+         end loop;
       end IRQ_Handler;
 
+      ------------
+      -- Insert --
+      ------------
+
+      procedure Insert (Item : Interfaces.Unsigned_8) is
+      begin
+         Values (Next_In) := Item;
+         Next_In := (Next_In mod Buffer_Capacity) + 1;
+         Count := Count + 1;
+         Not_Empty := True;
+      end Insert;
+
+      ------------
+      -- Remove --
+      ------------
+
+      procedure Remove (Item : out Interfaces.Unsigned_8) is
+      begin
+         Item := Values (Next_Out);
+         Next_Out := (Next_Out mod Buffer_Capacity) + 1;
+         Count := Count - 1;
+         Not_Empty := Count /= 0;
+      end Remove;
+
+      -----------
+      -- Empty --
+      -----------
+
+      function Empty return Boolean is
+      begin
+         return Count = 0;
+      end Empty;
+
+      ----------
+      -- Full --
+      ----------
+
+      function Full return Boolean is
+      begin
+         return Count = Buffer_Capacity;
+      end Full;
+
+      ------------
+      -- Extent --
+      ------------
+
+      function Extent return Natural is
+      begin
+         return Count;
+      end Extent;
    end Rx_IRQ_Handler;
 end Coms;
