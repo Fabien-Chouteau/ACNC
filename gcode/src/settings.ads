@@ -45,6 +45,6 @@ package Settings is
    Homing_Order : constant array (Homing_Order_Range) of Gcode.Axis_Name :=
      (Gcode.Z_Axis, Gcode.X_Axis, Gcode.Y_Axis);
 
-   Homing_Approach_Feed_Rate : constant Gcode.Float_Value := 10.0; --  mm/s
+   Homing_Approach_Feed_Rate : constant Gcode.Float_Value := 20.0; --  mm/s
    Homing_Precision_Feed_Rate : constant Gcode.Float_Value := 1.0; --  mm/s
 end Settings;

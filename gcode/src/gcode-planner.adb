@@ -255,7 +255,7 @@ package body Gcode.Planner is
 
                   --  Dummy block spliting until cleaver speed profile is
                   --  implemented...
-                  Seg.Frequency   := 1_000.0;
+                  Seg.Frequency   := 500.0;
                   Seg.Step_Count  := Steps'Min (Remaining_Steps, 500);
                   Remaining_Steps := Remaining_Steps - Seg.Step_Count;
 

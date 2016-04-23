@@ -1,4 +1,3 @@
-with Ada.Unchecked_Conversion;
 with Gcode.Parameters; use Gcode.Parameters;
 
 package Gcode.Context is
