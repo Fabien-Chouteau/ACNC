@@ -33,9 +33,9 @@ package body Step_Control is
       Configuration.Resistors   := Pull_Down;
 
       for Axis in Axis_Name loop
-         Enable_Clock (Step_GPIO (Axis).Port.all);
-         Enable_Clock (Dir_GPIO (Axis).Port.all);
-         Enable_Clock (Not_Enable_GPIO (Axis).Port.all);
+         Enable_Clock (Step_GPIO (Axis));
+         Enable_Clock (Dir_GPIO (Axis));
+         Enable_Clock (Not_Enable_GPIO (Axis));
 
          Configure_IO (Step_GPIO (Axis),
                        Config => Configuration);
@@ -45,10 +45,10 @@ package body Step_Control is
                        Config => Configuration);
 
          --  Init value
-         Clear (Step_GPIO (Axis));
+         Step_GPIO (Axis).Clear;
 
          --  Motors are disabled at init
-         Set (Not_Enable_GPIO (Axis));
+         Not_Enable_GPIO (Axis).Set;
 
          Set_Step_Direction (Axis, Forward);
       end loop;
@@ -60,13 +60,15 @@ package body Step_Control is
       Configuration.Resistors   := Pull_Up;
 
       for Axis in Axis_Name loop
-         Enable_Clock (Home_GPIO (Axis).Port.all);
+         Enable_Clock (Home_GPIO (Axis));
          Configure_IO (Home_GPIO (Axis), Configuration);
       end loop;
 
-      Enable_Clock (Analysis_Point.Port.all);
+      Enable_Clock (Analysis_Point);
+      Configuration.Mode        := Mode_Out;
+      Configuration.Speed       := Speed_100MHz;
       Configure_IO (Analysis_Point, Config => Configuration);
-      Clear (Analysis_Point);
+      Analysis_Point.Clear;
 
       Set_Stepper_Frequency (Settings.Idle_Stepper_Frequency);
 

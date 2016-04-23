@@ -1,4 +1,4 @@
-with "drivers/boards/stm32f4_discovery/stm32f4_discovery.gpr";
+with "drivers/boards/stm32f4_discovery.gpr";
 with "../gcode/gcode";
 
 project STM32F4_DISCO_CNC_Controller is
