@@ -10,6 +10,8 @@ package Gcode_Controller is
    overriding
    procedure Put (Ctx : in out CNC_Context; C : Character);
 
+   procedure Start;
+
 private
    subtype Buffer_Range is Positive range 1 .. 256;
 
