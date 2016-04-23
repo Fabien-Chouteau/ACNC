@@ -26,6 +26,7 @@ with Machine_Motion_history; use Machine_Motion_history;
 with Gtk.Combo_Box_Text; use Gtk.Combo_Box_Text;
 with Gtk.Image_Menu_Item; use Gtk.Image_Menu_Item;
 with Control_Window;
+with Serial_Coms;
 
 package body Station_Gtk is
 
@@ -44,8 +45,6 @@ package body Station_Gtk is
    Serial_Name, Serial_Baud : Gtk_Combo_Box_Text;
    Execute_Menu : Gtk_Image_Menu_Item;
    The_Builder : Gtkada_Builder;
-
-   Serial : aliased Serial_Port;
 
    Log_Error_Tag : Gtk.Text_Tag.Gtk_Text_Tag;
    Log_Warning_Tag : Gtk.Text_Tag.Gtk_Text_Tag;
@@ -165,6 +164,9 @@ package body Station_Gtk is
 
       Cairo.Restore (Cr);
 
+      while not Serial_Coms.RX_Empty loop
+         Ctx.Log (Board, Serial_Coms.Get);
+      end loop;
       return False;
    end Redraw;
 
@@ -290,18 +292,17 @@ package body Station_Gtk is
          if Serial_Found then
             Put_Line ("Selected serial port:" & Serial_Name.Get_Active_Text &
                         ":" & Serial_Baud.Get_Active_Text);
-            declare
-            begin
-               Open (Serial, Port_Name (Serial_Name.Get_Active_Text));
-               Set (Serial, Data_Rate'Value (Serial_Baud.Get_Active_Text));
+
+            if Serial_Coms.Open (Port_Name (Serial_Name.Get_Active_Text),
+                                 Data_Rate'Value (Serial_Baud.Get_Active_Text))
+            then
                Execute_Menu.Set_Sensitive (True);
-               Control_Window.Set_Serial (Serial'Access);
-            exception
-               when Serial_Error =>
-                  Ctx.Log (Error, "Cannot open serial port" &
-                             Serial_Name.Get_Active_Text &
-                             ":" & Serial_Baud.Get_Active_Text);
-            end;
+               Control_Window.Set_Connected (True);
+            else
+               Ctx.Log (Error, "Cannot open serial port" &
+                          Serial_Name.Get_Active_Text &
+                          ":" & Serial_Baud.Get_Active_Text);
+            end if;
          end if;
       end if;
       Serial_Dialog.Destroy;
@@ -342,7 +343,6 @@ package body Station_Gtk is
      (User_Data : access Gtkada_Builder_Record'Class) return Boolean
    is
       pragma Unreferenced (User_Data);
-      Data : String (1 .. 10);
       Start_Iter, End_Iter : Gtk_Text_Iter;
       Line_Cnt : Gint := 0;
    begin
@@ -354,10 +354,7 @@ package body Station_Gtk is
             Line : constant UTF8_String :=
               Text.Get_Text (Start_Iter, End_Iter);
          begin
-            UTF8_String'Write (Serial'Access, Line & ASCII.LF & ASCII.CR);
-            String'Read (Serial'Access, Data);
-            Put_Line ("Len :" & Data'Length'Img);
-            Put_Line ("Data : '" & Data & "'");
+            Serial_Coms.Send (Line);
          exception
             when others =>
                Put_Line ("Exception");
