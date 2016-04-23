@@ -187,10 +187,9 @@ package body Stepper is
       St_Data.Homing_Axis  :=
         Settings.Homing_Order (St_Data.Homing_Order_Index);
 
-      --  Failing with GNAT_GPL_2015
---        St_Data.Set_Stepper_Frequency_Callback
---          (Frequency_Value (Homing_Approach_Feed_Rate *
---               Step_Per_Millimeter (St_Data.Homing_Axis)));
+      St_Data.Set_Stepper_Frequency_Callback
+        (Frequency_Value (Homing_Approach_Feed_Rate *
+             Step_Per_Millimeter (St_Data.Homing_Axis)));
 
       St_Data.Homing_State := Homing_Approach;
 
@@ -220,16 +219,16 @@ package body Stepper is
 
                --  Switch to precission feed rate
 
-               --  Failing with GNAT_GPL_2015
---                 St_Data.Set_Stepper_Frequency_Callback
---                   (Frequency_Value (Homing_Precision_Feed_Rate *
---                        Step_Per_Millimeter (St_Data.Homing_Axis)));
+               St_Data.Set_Stepper_Frequency_Callback
+                 (Frequency_Value (Homing_Precision_Feed_Rate *
+                      Step_Per_Millimeter (St_Data.Homing_Axis)));
 
             end if;
 
          when Homing_Precision =>
             if St_Data.Home_Test_Callback (St_Data.Homing_Axis) then
-               if St_Data.Homing_Order_Index = Settings.Homing_Order_Range'Last
+               if
+                 St_Data.Homing_Order_Index = Settings.Homing_Order_Range'Last
                then
                   --  End of homing
                   St_Data.Has_Segment := False;
