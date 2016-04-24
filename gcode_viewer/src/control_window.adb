@@ -1,11 +1,14 @@
 with Gcode.Parser;
 with Gcode.Execution;
 with Gcode; use Gcode;
-with Ada.Float_Text_IO; use Ada.Float_Text_IO;
+with Ada.Text_IO;
 with Gtk.Radio_Button; use Gtk.Radio_Button;
 with Serial_Coms;
 
 package body Control_Window is
+
+   package Float_IO is new Ada.Text_IO.Float_IO (Float_Value);
+   use Float_IO;
 
    procedure Simulate_Gcode_Line (Line : String);
    procedure Send_Gcode_Line (Line : String);
