@@ -125,9 +125,10 @@ package body Gcode.Execution is
          Line_Command (Ctx, Feed_Rate);
       end if;
 
+      Ctx.Virt_Position := Settings.Home_Coordinate;
+
       Gcode.Planner.Planner_Add_Homing (Ctx       => Ctx,
                                         Feed_Rate => Feed_Rate);
-      Ctx.Virt_Position := Settings.Home_Coordinate;
    end Return_To_Home;
 
    -------------------

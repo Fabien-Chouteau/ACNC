@@ -16,10 +16,10 @@ package body Gcode.Motion is
       Feed_Rate : Step_Speed)
    is
    begin
-      Gcode.Planner.Planner_Add_Motion (Ctx, Target, Feed_Rate);
-
       --  Update virtual position
       Ctx.Virt_Position := Target;
+
+      Gcode.Planner.Planner_Add_Motion (Ctx, Target, Feed_Rate);
    end Move_Line;
 
    -----------------

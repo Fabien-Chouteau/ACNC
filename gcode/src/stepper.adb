@@ -234,6 +234,8 @@ package body Stepper is
                   St_Data.Has_Segment := False;
                   St_Data.Current_Position :=
                     Milli_To_Step (Settings.Home_Coordinate);
+                  --  Reset step instruction
+                  St_Data.Do_Step := (others => False);
                else
                   --  Start homing cycle for next axis
                   St_Data.Homing_Order_Index := St_Data.Homing_Order_Index + 1;
@@ -253,6 +255,18 @@ package body Stepper is
 
       Step_Pulse.Start_Step_Cycle (St_Data.Do_Step,
                                    St_Data.Directions);
+
+      for Axis in Axis_Name loop
+         if St_Data.Do_Step (Axis) then
+            if St_Data.Directions (Axis) = Forward then
+               St_Data.Current_Position (Axis) :=
+                 St_Data.Current_Position (Axis) + 1;
+            else
+               St_Data.Current_Position (Axis) :=
+                 St_Data.Current_Position (Axis) - 1;
+            end if;
+         end if;
+      end loop;
 
       --  Reset step instruction
       St_Data.Do_Step := (others => False);
@@ -319,22 +333,17 @@ package body Stepper is
          when Motion_Segment =>
             --  Bresenham for each axis
             for Axis in Axis_Name loop
-               St_Data.Counter (Axis) :=
-                 St_Data.Counter (Axis) + St_Data.Block_Steps (Axis);
 
-               if St_Data.Counter (Axis) > St_Data.Block_Event_Count then
-                  St_Data.Do_Step (Axis) := True;
+               if St_Data.Block_Steps (Axis) /= 0 then
                   St_Data.Counter (Axis) :=
-                    St_Data.Counter (Axis) - St_Data.Block_Event_Count;
-                  if St_Data.Directions (Axis) = Forward then
-                     St_Data.Current_Position (Axis) :=
-                       St_Data.Current_Position (Axis) + 1;
+                    St_Data.Counter (Axis) + St_Data.Block_Steps (Axis);
+                  if St_Data.Counter (Axis) >= St_Data.Block_Event_Count then
+                     St_Data.Do_Step (Axis) := True;
+                     St_Data.Counter (Axis) :=
+                       St_Data.Counter (Axis) - St_Data.Block_Event_Count;
                   else
-                     St_Data.Current_Position (Axis) :=
-                       St_Data.Current_Position (Axis) + 1;
+                     St_Data.Do_Step (Axis) := False;
                   end if;
-               else
-                  St_Data.Do_Step (Axis) := False;
                end if;
             end loop;
 
