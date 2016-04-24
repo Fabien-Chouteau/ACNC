@@ -37,7 +37,6 @@ package body Station_Gtk is
    Log_Buffer  : Gtk_Text_Buffer := null;
    Text_View   : Gtk_Text_View := null;
    Log_View    : Gtk_Text_View := null;
-   pragma Unreferenced (Log_View);
    Zoom        : constant Gdouble := 0.19;
    View_X : constant Gdouble := -2000.0;
    View_Y : constant Gdouble := -2000.0;
@@ -223,9 +222,6 @@ package body Station_Gtk is
       Start_Iter, End_Iter : Gtk_Text_Iter;
       Line_Cnt : Gint := 0;
    begin
-      Ctx.Log (Error, "Test error");
-      Ctx.Log (Warning, "Test Warning");
-      Ctx.Log (Board, "Test Board");
       Ctx.Virt_Position := (0.0, 0.0, 0.0);
       Clear_History;
       loop
@@ -354,7 +350,7 @@ package body Station_Gtk is
             Line : constant UTF8_String :=
               Text.Get_Text (Start_Iter, End_Iter);
          begin
-            Serial_Coms.Send (Line);
+            Serial_Coms.Send (Line & ASCII.LF & ASCII.CR);
          exception
             when others =>
                Put_Line ("Exception");
@@ -507,9 +503,10 @@ package body Station_Gtk is
                                                when Warning => Log_Warning_Tag,
                                                when Error => Log_Error_Tag,
                                                when Board => Log_Board_Tag));
---        if Scroll_To_Iter (Log_View, Iter, 1.0, False, 0.0, 0.0) then
---           null;
---        end if;
+      Log_Buffer.Get_End_Iter (Iter);
+      if Scroll_To_Iter (Log_View, Iter, 0.0, False, 0.0, 0.0) then
+         null;
+      end if;
    end Log;
 
    ---------
