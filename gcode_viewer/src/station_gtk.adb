@@ -138,6 +138,7 @@ package body Station_Gtk is
       Cairo.Scale (Cr, Zoom, Zoom);
       Cairo.Translate (Cr, View_X, View_Y);
 
+      --  Drawing the grid
       for GX in 0 .. 40 loop
          if GX mod 10 = 0 then
             Set_Source_Rgb (Cr, 0.0, 0.0, 0.0);

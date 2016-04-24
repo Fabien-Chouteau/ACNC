@@ -3,14 +3,6 @@ with Ada.Containers.Doubly_Linked_Lists;
 with Stepper; use Stepper;
 with Settings;
 
-----------------------------
--- Machine_Motion_history --
-----------------------------
-
-----------------------------
--- Machine_Motion_history --
-----------------------------
-
 package body Machine_Motion_history is
 
    use type Step_Position;
@@ -32,6 +24,8 @@ package body Machine_Motion_history is
    Time_Factor : Integer := 10;
    Motor_Enabled : Motor_Enable_Array := (others => False);
 
+   type Save_Mod is mod 5;
+
    -----------------
    -- Machine_Sim --
    -----------------
@@ -47,6 +41,8 @@ package body Machine_Motion_history is
       History : Position_Container.List;
       Current_Pos : Step_Position := (others => 0);
       Current_Dir : Axis_Directions := (others => Forward);
+
+      Save : Save_Mod := 0;
    end Machine_Sim;
 
    protected body Machine_Sim is
@@ -60,10 +56,13 @@ package body Machine_Motion_history is
       begin
          Current_Pos (Axis) := Current_Pos (Axis) + S;
 
---           --  Do not Save Z_Axis
---           if Axis /= Z_Axis then
-         History.Append (Current_Position);
---           end if;
+         --  Do not Save Z_Axis motion
+         if Axis /= Z_Axis then
+            if Save = 0 then
+               History.Append (Current_Position);
+            end if;
+            Save := Save + 1;
+         end if;
       end Make_Step;
 
       ------------------------
@@ -91,22 +90,15 @@ package body Machine_Motion_history is
       ------------------
 
       procedure Draw_History (Cr : Cairo_Context; Zoom : Gdouble) is
-         Scale : Gdouble;
+         Z_Threshold : constant Integer :=
+           Milli_To_Step ((0.0, 0.0, -13.0))(Z_Axis);
       begin
          for Pos of History loop
-            if Pos (Z_Axis) > 0 then
+            if Pos (Z_Axis) > Z_Threshold then
                Set_Source_Rgb (Cr, 0.0, 1.0, 0.0);
             else
                Set_Source_Rgb (Cr, 1.0, 0.0, 0.0);
             end if;
-            Scale := Gdouble (Pos (Z_Axis)) / 5.0;
-            if Scale > 1.0 then
-               Scale := 1.0;
-            elsif Scale < 0.0 then
-               Scale := 0.0;
-            end if;
-
-            Set_Source_Rgb (Cr, 1.0, 0.0, Scale);
 
             Rectangle (Cr     => Cr,
                        X      => Gdouble (Pos (X_Axis)) - 1.0 * (1.0 / Zoom),
@@ -179,7 +171,7 @@ package body Machine_Motion_history is
    function Home_Test (Axis : Axis_Name) return Boolean is
    begin
       if Axis = Z_Axis then
-         return Machine_Sim.Current_Position (Axis) > 500;
+         return Machine_Sim.Current_Position (Axis) > 0;
       else
          return Machine_Sim.Current_Position (Axis) < 0;
       end if;
