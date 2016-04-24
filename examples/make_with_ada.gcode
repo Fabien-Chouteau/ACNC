@@ -1,10 +1,13 @@
-G21 (All units in mm)
+G21 ; All units in mm
+G90 ; Set to absolute mode
 
+
+; Parameters
 #<pen_up> = -12
 #<pen_down> = -15
+
 M17 ; Enable motors
 G28 ; Go home
-
 
 (Start cutting path: Right Curly Bracket)
 G00 Z#<pen_up>
