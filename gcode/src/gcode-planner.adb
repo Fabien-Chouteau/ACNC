@@ -154,6 +154,7 @@ package body Gcode.Planner is
       M_Block : Motion_Block (Kind => Motion_Homing);
    begin
       Wait_And_Add_Motion (M_Block);
+      Planner_Position := Milli_To_Step (Settings.Home_Coordinate);
    end Planner_Add_Homing;
 
    ---------------------------
