@@ -145,18 +145,26 @@
   <object class="GtkTextTagTable" id="texttagtable1"/>
   <object class="GtkTextBuffer" id="textbuffer">
     <property name="tag_table">texttagtable1</property>
-    <property name="text" translatable="yes">G90 ; Absolute positioning
+    <property name="text" translatable="yes"><![CDATA[
+#<pen_up> = -12
+#<pen_down> = -13.5
+G90 ; Absolute positioning
 M17 ; Enable motors
 G28 ; Homing
-G00 Z5
+G00 Z#<pen_up>
 G00 X20 Y30
-G00 Z0
+G00 Z#<pen_down>
 G02 X20 Y10 J-10
 G02 X20 Y20 J5
+G00 Z#<pen_up>
 G04 P2 ; Dwell 2s
+G00 Z#<pen_down>
 G03 X20 Y30 J5
+G03 X20 Y10 J-10
+G00 Z#<pen_up>
 G28 ; Homing
 M18; Disable motors
+]]>
 </property>
   </object>
   <object class="GtkWindow" id="window1">
