@@ -110,10 +110,11 @@ package body Serial_Coms is
          declare
          begin
             String'Read (Serial'Access, Data);
-            Ub := Ub & Data;
-            if Data (1) = ASCII.CR then
+            if Data (1) = ASCII.CR or else Data (1) = ASCII.LF then
                RX.Insert (Ub);
                Set_Unbounded_String (Ub, "");
+            else
+               Ub := Ub & Data;
             end if;
          exception
             when Serial_Error =>
