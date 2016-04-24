@@ -42,10 +42,12 @@ package body Gcode.Planner is
    end record;
 
    package Motion_Buffer_Package is
-     new Bounded_Buffers_Blocking_Consumer (Motion_Block, 128,
+     new Bounded_Buffers_Blocking_Consumer (Motion_Block,
+                                            Settings.Block_Buffer_Size,
                                             System.Default_Priority + 1);
    package Segment_Buffer_Package is
-     new Bounded_Buffers_Blocking_Producer (Segment, 64,
+     new Bounded_Buffers_Blocking_Producer (Segment,
+                                            Settings.Segment_Buffer_Size,
                                             System.Default_Priority + 2);
 
    Motion_Block_Buffer : Motion_Buffer_Package.Bounded_Buffer;
