@@ -8,7 +8,16 @@ package Settings is
    Dwell_Stepper_Frequency : constant Gcode.Frequency_Value := 100.0;
    --  Frequency of the stepper when executing a dwell command (Hz)
 
-   Step_Per_Millimeter : Gcode.Float_Position := (100.0, 100.0, 100.0);
+   Step_Per_Millimeter : constant Gcode.Float_Position :=
+     (100.0, 100.0, 100.0);
+   --  Property of the stepper motor and leadscrew
+
+   Max_Step_Per_Segment : constant Gcode.Steps := 25;
+   --  Maximum number of steps in a segment
+
+   Stepper_Max_Frequency : constant Gcode.Frequency_Value := 10_000.0;
+   Stepper_Min_Frequency : constant Gcode.Frequency_Value := 500.0;
+   Acceleration_Freq : constant Gcode.Frequency_Value := 75.0;
 
    -----------------------
    -- Step pins timming --
