@@ -1,7 +1,6 @@
 with "drivers/boards/stm32f4_discovery.gpr";
-with "../gcode/gcode";
 
-project STM32F4_DISCO_CNC_Controller is
+project STM32F4_DISCO_CNC_Controller extends "../gcode/gcode" is
 
    for Languages use ("Ada");
    for Source_Dirs use ("src");

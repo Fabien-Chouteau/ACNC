@@ -1,12 +1,9 @@
 with Bounded_Buffers_Blocking_Consumer;
 with Bounded_Buffers_Blocking_Producer;
 with System;
-with Settings;
+with Settings; use Settings;
 
 package body Gcode.Planner is
-
-   Acceleration_Ticks_Per_Second : constant := 100;
-   Max_Segment_Time_Second : constant := 1.0 / Acceleration_Ticks_Per_Second;
 
    use type Float_Position;
    use type Step_Position;
@@ -193,18 +190,11 @@ package body Gcode.Planner is
    end Planner_Task;
 
    task body Planner_Task is
-      Motion : Motion_Block;
-      Seg : Segment;
-      Remaining_Steps : Steps;
-      Step_Per_Milli : Float_Value;
-      pragma Unreferenced (Step_Per_Milli);
---
---        Current_Speed : Step_Speed;
---        Cruise_Speed  : Step_Speed;
---        Exit_Speed    : Step_Speed;
---
-      Seg_Time : Float_Value;
-      pragma Unreferenced (Seg_Time);
+      Motion               : Motion_Block;
+      Seg                  : Segment;
+      Remaining_Steps      : Steps;
+      Remaining_Seg        : Natural;
+      Seg_Required_To_Stop : Natural;
    begin
       loop
 
@@ -243,9 +233,6 @@ package body Gcode.Planner is
             when Motion_Line =>
                Remaining_Steps := Motion.Step_Event_Count;
 
-               Step_Per_Milli :=
-                 Float_Value (Remaining_Steps) / Motion.Remaining_Distance;
-
                --  Signal this segment as first of the new block
                Seg.New_Block := True;
 
@@ -253,13 +240,42 @@ package body Gcode.Planner is
                Seg.Block_Steps := Motion.Relative_Steps;
                Seg.Block_Event_Count := Motion.Step_Event_Count;
                Seg.Directions := Motion.Directions;
-               while Remaining_Steps > 0 loop
-                  Seg_Time := Max_Segment_Time_Second;
 
-                  --  Dummy block spliting until cleaver speed profile is
-                  --  implemented...
-                  Seg.Frequency   := 500.0;
-                  Seg.Step_Count  := Steps'Min (Remaining_Steps, 500);
+
+               --  Start speed
+               Seg.Frequency := Stepper_Min_Frequency;
+
+               while Remaining_Steps > 0 loop
+
+                  --  Remaining number of segement in the block
+                  Remaining_Seg := Remaining_Steps / Max_Step_Per_Segment;
+
+
+                  --  Given the current speed, number of segments required to
+                  --  stop.
+                  Seg_Required_To_Stop :=
+                    Natural (Seg.Frequency / Acceleration_Freq);
+
+
+                  if Remaining_Seg < Seg_Required_To_Stop then
+
+                     --  Deceleration
+                     Seg.Frequency := Seg.Frequency - Acceleration_Freq;
+
+                  elsif Seg.Frequency < Stepper_Max_Frequency then
+
+                     --  Acceleration
+                     Seg.Frequency := Seg.Frequency + Acceleration_Freq;
+
+                  end if;
+
+                  --  Check that we don't completely stop the stepper
+                  if Seg.Frequency < Stepper_Min_Frequency then
+                     Seg.Frequency := Stepper_Min_Frequency;
+                  end if;
+
+                  Seg.Step_Count  := Steps'Min (Remaining_Steps,
+                                                Max_Step_Per_Segment);
                   Remaining_Steps := Remaining_Steps - Seg.Step_Count;
 
                   --  Blocking call
