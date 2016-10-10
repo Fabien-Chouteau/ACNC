@@ -2,8 +2,8 @@ os:
   - linux
 
 before_script:
-  - wget http://mirrors.cdn.adacore.com/art/573f240ac7a447edfe0316a5 -O /tmp/
-  - tar -xvf /tmp/gnat-gpl-2016-arm-elf-linux-bin.tar.gz 
+  - wget http://mirrors.cdn.adacore.com/art/573f240ac7a447edfe0316a5
+  - tar -xvf gnat-gpl-2016-arm-elf-linux-bin.tar.gz 
   - export PATH=$PATH:$PWD/gnat-gpl-2016-arm-elf-linux-bin/bin/
 
 script:
