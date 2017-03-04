@@ -1,0 +1,31 @@
+with "drivers/boards/stm32f4_discovery.gpr";
+
+project Stm_Sgil_Controller extends "../gcode/gcode" is
+
+   for Languages use ("Ada");
+   for Source_Dirs use ("src");
+   for Object_Dir use "obj";
+   for Target use "arm-eabi";
+   for Runtime ("ada") use "ravenscar-full-stm32f4";
+   for Main use ("main.adb");
+
+   type LOADER_Type is ("RAM", "ROM");
+   LOADER : LOADER_Type := external ("LOADER", "ROM");
+
+   type Build_Type is ("Debug", "Release");
+   Build : Build_Type := external ("Build", "Debug");
+
+   Build_Switches := ("-gnat12", "-gnatwa", "-gnatwe",
+                      "-gnatw.X"); --  "-gnatyg", "-gnaty-d",
+   case Build is
+      when "Debug" =>
+         Build_Switches := Build_Switches & ("-g", "-O0");
+      when "Release" =>
+         Build_Switches := Build_Switches & ("-O3");
+   end case;
+
+   package Compiler is
+      for Default_Switches ("ada") use Build_Switches;
+   end Compiler;
+end Stm_Sgil_Controller;
+
