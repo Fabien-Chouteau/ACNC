@@ -2,7 +2,7 @@
 --                                                                           --
 --                                   ACNC                                    --
 --                                                                           --
---         Copyright (C) 2016 Fabien Chouteau (chouteau@adacore.com)         --
+--       Copyright (C) 2016-2017 Fabien Chouteau (chouteau@adacore.com)      --
 --                                                                           --
 --                                                                           --
 --    ACNC is free software: you can redistribute it and/or modify it        --
@@ -26,6 +26,7 @@ with Gcode.Error;
 with Coms;
 with Ada.Synchronous_Task_Control;
 with System;
+with Make_With_Ada_Gcode;
 
 package body Gcode_Controller is
 
@@ -41,7 +42,21 @@ package body Gcode_Controller is
    ---------------
 
    procedure Initalize is
+      Configuration : GPIO_Port_Configuration;
    begin
+      Enable_Clock (Demo_Mode_Button);
+      Configuration.Mode        := Mode_In;
+      Configuration.Output_Type := Push_Pull;
+      Configuration.Speed       := Speed_25MHz;
+      Configuration.Resistors   := Pull_Up;
+      Demo_Mode_Button.Configure_IO (Configuration);
+
+      Enable_Clock (Demo_Mode_LED);
+      Configuration.Mode        := Mode_Out;
+      Configuration.Output_Type := Open_Drain;
+      Demo_Mode_LED.Configure_IO (Configuration);
+      Demo_Mode_LED.Clear;
+
       Ctx.Output_Index := Ctx.Output_Buffer'First;
    end Initalize;
 
@@ -101,7 +116,29 @@ package body Gcode_Controller is
       Buffer : String (Buffer_Range);
       Index : Buffer_Range := Buffer_Range'First;
    begin
+
       Ada.Synchronous_Task_Control.Suspend_Until_True (Task_Sync);
+
+      if not Demo_Mode_Button.Set then
+         loop
+            Demo_Mode_LED.Set;
+            while not Demo_Mode_Button.Set loop
+               --  Waiting for button release...
+               null;
+            end loop;
+
+            while Demo_Mode_Button.Set loop
+               --  Waiting for button press...
+               null;
+            end loop;
+            Demo_Mode_LED.Clear;
+
+            for Str_Ptr of Make_With_Ada_Gcode.Gcode loop
+               Gcode_Controller.Execute (Str_Ptr.all);
+            end loop;
+         end loop;
+      end if;
+
       Coms.UART_Send_DMA_Data_Blocking
         ("--- ACNC ---" &
            ASCII.CR & ASCII.LF);
