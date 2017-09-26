@@ -2,7 +2,7 @@
 --                                                                           --
 --                                   ACNC                                    --
 --                                                                           --
---         Copyright (C) 2016 Fabien Chouteau (chouteau@adacore.com)         --
+--      Copyright (C) 2016-2017 Fabien Chouteau (chouteau@adacore.com)       --
 --                                                                           --
 --                                                                           --
 --    ACNC is free software: you can redistribute it and/or modify it        --
@@ -21,8 +21,7 @@
 -------------------------------------------------------------------------------
 
 with Ada.Unchecked_Conversion;
-with STM32; use STM32;
-with Interfaces.Bit_Types; use Interfaces.Bit_Types;
+with HAL;                      use HAL;
 
 package body Coms is
 
@@ -89,7 +88,7 @@ package body Coms is
       Set_Flow_Control (Transceiver, CTS_Flow_Control);
       --  Because of FTDI's potential 3 character overrun
       --  (http://www.ftdichip.com/Support/FAQs.htm#HwGen3)
-      --  RTS controll is manuall.
+      --  RTS controll is manual.
    end Initialize_USART;
 
    --------------------
@@ -113,7 +112,6 @@ package body Coms is
       Configuration.FIFO_Threshold               := FIFO_Threshold_Full_Configuration;
       Configuration.Memory_Burst_Size            := Memory_Burst_Inc4;
       Configuration.Peripheral_Burst_Size        := Peripheral_Burst_Inc4;
-
       Configure (Controller, Tx_Stream, Configuration);
       --  note the controller is disabled by the call to Configure
    end Initialize_DMA;
@@ -161,6 +159,7 @@ package body Coms is
         (Character, Interfaces.Unsigned_8);
       Source_Block : DMA_Data (Data'Range);
    begin
+
       for Index in Source_Block'Range loop
          Source_Block (Index) := Character_To_Data (Data (Index));
       end loop;
@@ -170,13 +169,14 @@ package body Coms is
          Tx_Stream,
          Source      => Source_Block'Address,
          Destination => Data_Register_Address (Transceiver),
-         Data_Count  => Short (Source_Block'Length));
+         Data_Count  => UInt16 (Source_Block'Length));
       --  also enables the stream
 
       Enable_DMA_Transmit_Requests (Transceiver);
 
       Tx_IRQ_Handler.Await_Transfer_Complete;
    end UART_Send_DMA_Data_Blocking;
+
    -------------------------------
    -- Finalize_DMA_Transmission --
    -------------------------------
@@ -308,6 +308,7 @@ package body Coms is
       end IRQ_Handler;
 
    end Tx_IRQ_Handler;
+
    --------------------
    -- Rx_IRQ_Handler --
    --------------------

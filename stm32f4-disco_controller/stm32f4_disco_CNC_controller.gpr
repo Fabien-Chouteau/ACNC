@@ -1,4 +1,4 @@
-with "drivers/boards/stm32f4_discovery.gpr";
+with "drivers/boards/stm32f407_discovery/stm32f407_discovery_full.gpr";
 
 project STM32F4_DISCO_CNC_Controller extends "../gcode/gcode" is
 
@@ -8,6 +8,7 @@ project STM32F4_DISCO_CNC_Controller extends "../gcode/gcode" is
    for Target use "arm-eabi";
    for Runtime ("ada") use "ravenscar-full-stm32f4";
    for Main use ("main.adb");
+   for Create_Missing_Dirs use "True";
 
    type LOADER_Type is ("RAM", "ROM");
    LOADER : LOADER_Type := external ("LOADER", "ROM");
