@@ -26,9 +26,6 @@ with Settings;
 
 package body Gcode.Execution is
 
-   use type Step_Position;
-   use type Float_Position;
-
    procedure Line_Command (Ctx : in out GContext'Class;
                            Feed_Rate : Step_Speed);
    procedure Circle_Command

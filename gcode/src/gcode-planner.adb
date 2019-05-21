@@ -27,6 +27,7 @@ with Settings; use Settings;
 
 package body Gcode.Planner is
 
+   use Float_Functions;
    use type Float_Position;
    use type Step_Position;
 

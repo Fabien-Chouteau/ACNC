@@ -31,7 +31,6 @@ package Gcode is
 
    package Float_Functions is new
      Ada.Numerics.Generic_Elementary_Functions (Float_Value);
-   use Float_Functions;
 
    type Word is record
       Value  : Float_Value;

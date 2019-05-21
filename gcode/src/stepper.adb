@@ -39,7 +39,7 @@ package body Stepper is
    procedure Dummy_Set_Direction_Pin (Axis : Axis_Name;
                                       Dir : Direction) is null;
    procedure Dummy_Set_Stepper_Frequency (Freq_Hz : Frequency_Value) is null;
-   function Dummy_Home_Test (Axis : Axis_Name) return Boolean is (False);
+   function Dummy_Home_Test (Unused : Axis_Name) return Boolean is (False);
    procedure Dummy_Motor_Enable  (Axis : Axis_Name; Enable : Boolean) is null;
 
    procedure Setup_Homing;

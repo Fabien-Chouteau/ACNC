@@ -25,8 +25,8 @@ with Gcode.Planner;
 
 package body Gcode.Motion is
 
-   use type Step_Position;
    use type Float_Position;
+   use Float_Functions;
 
    ---------------
    -- Move_Line --
