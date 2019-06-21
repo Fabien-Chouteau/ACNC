@@ -21,6 +21,7 @@
 -------------------------------------------------------------------------------
 
 with Gcode.Parameters; use Gcode.Parameters;
+with Settings;
 
 package Gcode.Context is
 
@@ -32,7 +33,10 @@ package Gcode.Context is
       Fast_Feed_Rate   : Step_Speed := 2.0;
       Current_Feed_Rate : Step_Speed := 1.0;
       Error_Flag : Boolean := False;
-      Virt_Position : Float_Position;
+
+
+      Virt_Position : Float_Position := Settings.Home_Coordinate;
+      --  Initial virtual posistion is set to the home coordinate
    end record;
 
    function Home (Ctx : in out GContext; Axis : Axis_Name) return Boolean;

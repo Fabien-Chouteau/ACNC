@@ -73,7 +73,8 @@ package body Gcode.Planner is
    Motion_Block_Buffer : Motion_Buffer_Package.Bounded_Buffer;
    Segment_Block_Buffer : Segment_Buffer_Package.Bounded_Buffer;
 
-   Planner_Position : Step_Position;
+   Planner_Position : Step_Position :=
+     Milli_To_Step (Settings.Home_Coordinate);
 
    procedure Wait_And_Add_Motion (M_Block : Motion_Block);
 
