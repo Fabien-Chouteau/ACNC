@@ -20,7 +20,6 @@
 --                                                                           --
 -------------------------------------------------------------------------------
 
-with Ada.Text_IO; use Ada.Text_IO;
 with Gcode.Error; use Gcode.Error;
 
 package body Gcode.Context is
@@ -107,14 +106,13 @@ package body Gcode.Context is
    ---------
 
    procedure Log (Ctx : in out GContext; Lvl : Log_Level; Str : String) is
-      pragma Unreferenced (Ctx);
    begin
-      Put ((case Lvl is
+      Ctx.Put((case Lvl is
               when Info    => "Info: ",
               when Warning => "Warning: ",
               when Error   => "Error: ",
               when Board   => "Board: ") & Str);
-      New_Line;
+      Ctx.New_Line;
    end Log;
 
    ---------

@@ -61,10 +61,10 @@ package Gcode.Lexer is
    function Get (Tokens : Token_List; Pos : Token_Range) return Token;
    function Number_Of_Token (Tokens : Token_List) return Natural;
 
-   procedure Print (Tokens : Token_List);
-   procedure Print (Tok : Token);
-   procedure Print (Tokens : Token_List; Line : String);
-   procedure Print (Tok : Token; Line : String);
+   procedure Print (Ctx : in out Gcontext; Tokens : Token_List);
+   procedure Print (Ctx : in out Gcontext; Tok : Token);
+   procedure Print (Ctx : in out Gcontext; Tokens : Token_List; Line : String);
+   procedure Print (Ctx : in out Gcontext; Tok : Token; Line : String);
 
    procedure Tokenize (Line   : String;
                        Ctx    : in out GContext'Class;

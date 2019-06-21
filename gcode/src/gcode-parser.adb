@@ -20,7 +20,6 @@
 --                                                                           --
 -------------------------------------------------------------------------------
 
-with Ada.Text_IO; use Ada.Text_IO;
 with Gcode.Lexer; use Gcode.Lexer;
 with Gcode.Shunting_Yard; use Gcode.Shunting_Yard;
 with Gcode.Parameters; use Gcode.Parameters;
@@ -189,7 +188,7 @@ package body Gcode.Parser is
       return not Error_Raised (Ctx);
    exception
       when E : Gcode_Exception =>
-         Put_Line (Exception_Message (E));
+         Ctx.Put_Line (Exception_Message (E));
          return False;
    end Parse;
 end Gcode.Parser;

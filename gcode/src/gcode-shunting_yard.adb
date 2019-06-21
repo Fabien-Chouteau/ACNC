@@ -20,7 +20,6 @@
 --                                                                           --
 -------------------------------------------------------------------------------
 
-with Ada.Text_IO; use Ada.Text_IO;
 with Gcode.Parameters; use Gcode.Parameters;
 with Ada.Numerics.Generic_Elementary_Functions;
 
@@ -76,7 +75,6 @@ package body Gcode.Shunting_Yard is
             R1 := Eval_Stack (Line, Ctx, Output);
             R2 := Eval_Stack (Line, Ctx, Output);
             if R1 = 0.0 then
-               Put_Line ("Division by zero at " & Tok.Tstart'Img);
                return 0.0;
             else
                return R2 / R1;

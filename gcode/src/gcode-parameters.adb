@@ -20,7 +20,6 @@
 --                                                                           --
 -------------------------------------------------------------------------------
 
-with Ada.Text_IO; use Ada.Text_IO;
 with Ada.Unchecked_Deallocation;
 
 package body Gcode.Parameters is
@@ -72,15 +71,12 @@ package body Gcode.Parameters is
       P : constant Natural := Find (Ctx, Id);
    begin
       if P in Parameter_Range then
-         Put_Line ("Set parameter value #" & Id'Img & " = " & Value'Img);
          Ctx.Params (P).Value := Value;
       else
          if Ctx.Last not in Parameter_Range then
             --  No error handling...
-            Put_Line ("Parameter set is full.");
             raise Program_Error;
          else
-            Put_Line ("Define parameter #" & Id'Img & " = " & Value'Img);
             Ctx.Params (Ctx.Last).Ptype := Numbered;
             Ctx.Params (Ctx.Last).Value := Value;
             Ctx.Params (Ctx.Last).Id    := Id;
@@ -100,15 +96,12 @@ package body Gcode.Parameters is
       P : constant Natural := Find (Ctx, Name);
    begin
       if P in Parameter_Range then
-         Put_Line ("Set parameter value #<" & Name & "> = " & Value'Img);
          Ctx.Params (P).Value := Value;
       else
          if Ctx.Last not in Parameter_Range then
-            Put_Line ("Parameter set is full.");
             --  No error handling...
             raise Program_Error;
          else
-            Put_Line ("Define parameter #<" & Name & "> = " & Value'Img);
             Ctx.Params (Ctx.Last).Ptype := Numbered;
             Ctx.Params (Ctx.Last).Value := Value;
             Ctx.Params (Ctx.Last).Name  := new String'(Name);
@@ -190,23 +183,5 @@ package body Gcode.Parameters is
       end loop;
       Ctx.Last := Parameter_Range'First;
    end Clear;
-
-
-   -----------
-   -- Print --
-   -----------
-
-   procedure Print (Ctx : Parameters_Set) is
-   begin
-      Put_Line ("Print parameters:");
-      for Index in Parameter_Range'First .. Ctx.Last - 1 loop
-         if Ctx.Params (Index).Name /= null then
-            Put ("#" & Ctx.Params (Index).Name.all);
-         else
-            Put ("#" & Ctx.Params (Index).Id'Img);
-         end if;
-         Put_Line (" :" & Ctx.Params (Index).Value'Img);
-      end loop;
-   end Print;
 
 end Gcode.Parameters;

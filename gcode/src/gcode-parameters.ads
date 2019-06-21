@@ -55,7 +55,6 @@ package Gcode.Parameters is
 
    procedure Clear (Ctx : in out Parameters_Set);
 
-   procedure Print (Ctx : Parameters_Set);
 private
 
    subtype Parameter_Range is Natural range 1 .. Max_Parameter;

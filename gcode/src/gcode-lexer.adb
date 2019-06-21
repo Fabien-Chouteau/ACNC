@@ -20,7 +20,6 @@
 --                                                                           --
 -------------------------------------------------------------------------------
 
-with Ada.Text_IO; use Ada.Text_IO;
 with Gcode.Error; use Gcode.Error;
 
 package body Gcode.Lexer is
@@ -159,15 +158,15 @@ package body Gcode.Lexer is
    -- Print --
    -----------
 
-   procedure Print (Tokens : Token_List) is
+   procedure Print (Ctx : in out Gcontext; Tokens : Token_List) is
    begin
       if Tokens.Last = Token_Range'First then
-         Put_Line ("No Token");
+         Ctx.Put_Line ("No Token");
       else
          for Index in Token_Range'First .. Tokens.Last - 1 loop
-            Print (Tokens.Tokens (Index));
+            Print (Ctx, Tokens.Tokens (Index));
          end loop;
-         New_Line;
+         Ctx.New_Line;
       end if;
    end Print;
 
@@ -175,29 +174,29 @@ package body Gcode.Lexer is
    -- Print --
    -----------
 
-   procedure Print (Tok : Token) is
+   procedure Print (Ctx : in out Gcontext; Tok : Token) is
    begin
-      Put ("(" & Tok.Tstart'Img & "," & Tok.Tend'Img & ", " &
+      Ctx.Put ("(" & Tok.Tstart'Img & "," & Tok.Tend'Img & ", " &
              Tok.Ttype'Img);
---        if Tok.Ttype = Literal then
---           Put ("," & Tok.Value'Img);
---        end if;
-      Put (")");
+      if Tok.Ttype = Literal then
+         Ctx.Put ("," & Tok.Value'Img);
+      end if;
+      Ctx.Put (")");
    end Print;
 
    -----------
    -- Print --
    -----------
 
-   procedure Print (Tokens : Token_List; Line : String) is
+   procedure Print (Ctx : in out GContext; Tokens : Token_List; Line : String) is
    begin
       if Tokens.Last = Token_Range'First then
-         Put_Line ("No Token");
+         Ctx.Put_Line ("No Token");
       else
          for Index in Token_Range'First .. Tokens.Last - 1 loop
-            Print (Tokens.Tokens (Index), Line);
+            Print (Ctx, Tokens.Tokens (Index), Line);
          end loop;
-         New_Line;
+         Ctx.New_Line;
       end if;
    end Print;
 
@@ -205,22 +204,22 @@ package body Gcode.Lexer is
    -- Print --
    -----------
 
-   procedure Print (Tok : Token; Line : String) is
+   procedure Print (Ctx : in out Gcontext; Tok : Token; Line : String) is
    begin
-      Print (Tok);
-      New_Line;
-      Put_Line (Line);
+      Print (Ctx, Tok);
+      Ctx.New_Line;
+      Ctx.Put_Line (Line);
       for Index in Line'First .. Tok.Tstart - 1 loop
-         Put (' ');
+         GContext'Class (Ctx).Put (' ');
       end loop;
-      Put ('^');
+      GContext'Class (Ctx).Put ('^');
       if Tok.Tstart /= Tok.Tend then
          for Index in Tok.Tstart + 1 .. Tok.Tend - 1 loop
-            Put ('-');
+            GContext'Class (Ctx).Put ('-');
          end loop;
-         Put ('^');
+         GContext'Class (Ctx).Put ('^');
       end if;
-      New_Line;
+      Ctx.New_Line;
    end Print;
 
    -----------------
