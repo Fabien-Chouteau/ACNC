@@ -45,15 +45,16 @@ package body Gcode_Controller is
       Configuration : GPIO_Port_Configuration;
    begin
       Enable_Clock (Demo_Mode_Button);
-      Configuration.Mode        := Mode_In;
-      Configuration.Output_Type := Push_Pull;
-      Configuration.Speed       := Speed_25MHz;
-      Configuration.Resistors   := Pull_Up;
+      Configuration := (Mode        => Mode_In,
+                        Resistors   => Pull_Up);
       Demo_Mode_Button.Configure_IO (Configuration);
 
       Enable_Clock (Demo_Mode_LED);
-      Configuration.Mode        := Mode_Out;
-      Configuration.Output_Type := Open_Drain;
+      Configuration := (Mode        => Mode_Out,
+                        Resistors   => Pull_Up,
+                        Output_Type => Open_Drain,
+                        Speed       => Speed_50MHz);
+
       Demo_Mode_LED.Configure_IO (Configuration);
       Demo_Mode_LED.Clear;
 
@@ -118,6 +119,10 @@ package body Gcode_Controller is
    begin
 
       Ada.Synchronous_Task_Control.Suspend_Until_True (Task_Sync);
+
+      for Str_Ptr of Make_With_Ada_Gcode.Gcode loop
+         Gcode_Controller.Execute (Str_Ptr.all);
+      end loop;
 
       if not Demo_Mode_Button.Set then
          loop

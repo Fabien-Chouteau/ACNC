@@ -6,7 +6,7 @@ package Make_With_Ada_Gcode is
       new String'("#<pen_up> = -12"),
       new String'("#<pen_down> = -15"),
       new String'("M17 ; Enable motors"),
-      new String'("G28 ; Go home"),
+      --  new String'("G28 ; Go home"),
       new String'("(Start cutting path: Right Curly Bracket)"),
       new String'("G00 Z#<pen_up>"),
       new String'("G00 X34.492847 Y33.263329"),

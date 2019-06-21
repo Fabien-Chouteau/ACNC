@@ -49,10 +49,10 @@ package body Step_Control is
    procedure Initalize is
       Configuration : GPIO_Port_Configuration;
    begin
-      Configuration.Mode        := Mode_Out;
-      Configuration.Output_Type := Push_Pull;
-      Configuration.Speed       := Speed_100MHz;
-      Configuration.Resistors   := Pull_Down;
+      Configuration := (Mode        => Mode_Out,
+                        Resistors   => Pull_Up,
+                        Output_Type => Push_Pull,
+                        Speed       => Speed_50MHz);
 
       for Axis in Axis_Name loop
          Enable_Clock (Step_GPIO (Axis));
@@ -76,10 +76,8 @@ package body Step_Control is
       end loop;
 
       --  Home switches
-      Configuration.Mode        := Mode_In;
-      Configuration.Output_Type := Push_Pull;
-      Configuration.Speed       := Speed_100MHz;
-      Configuration.Resistors   := Pull_Up;
+      Configuration := (Mode        => Mode_In,
+                        Resistors   => Pull_Up);
 
       for Axis in Axis_Name loop
          Enable_Clock (Home_GPIO (Axis));
@@ -87,8 +85,11 @@ package body Step_Control is
       end loop;
 
       Enable_Clock (Analysis_Point);
-      Configuration.Mode        := Mode_Out;
-      Configuration.Speed       := Speed_100MHz;
+      Configuration := (Mode        => Mode_Out,
+                        Resistors   => Pull_Up,
+                        Output_Type => Push_Pull,
+                        Speed       => Speed_100MHz);
+
       Configure_IO (Analysis_Point, Config => Configuration);
       Analysis_Point.Clear;
 
@@ -138,7 +139,7 @@ package body Step_Control is
 
    procedure Set_Stepper_Frequency (Freq_Hz : Frequency_Value) is
    begin
-      Task_Period := To_Time_Span (1.0 / Freq_Hz);
+      Task_Period := To_Time_Span (Duration (1.0 / Freq_Hz));
    end Set_Stepper_Frequency;
 
    ---------------

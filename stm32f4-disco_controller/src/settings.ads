@@ -21,16 +21,18 @@
 -------------------------------------------------------------------------------
 
 with Ada.Real_Time;
-with Gcode;
+with Gcode; use Gcode;
 
 package Settings is
+
+   Use_CoreXY_Motion : constant Boolean := True;
 
    Idle_Stepper_Frequency : constant Gcode.Frequency_Value := 100.0;
    --  Frequency of the stepper when the machine is idle (Hz)
    Dwell_Stepper_Frequency : constant Gcode.Frequency_Value := 100.0;
    --  Frequency of the stepper when executing a dwell command (Hz)
 
-   Step_Per_Millimeter : constant Gcode.Float_Position := (27.0, 27.0, 46.11);
+   Step_Per_Millimeter : constant Gcode.Float_Position := (80.0, 80.0, 46.11);
    --  Property of the stepper motor and leadscrew
 
    Max_Step_Per_Segment : constant Gcode.Steps := 25;
@@ -56,6 +58,22 @@ package Settings is
    Step_Pulse_Duration : constant Ada.Real_Time.Time_Span :=
      Ada.Real_Time.Milliseconds (0);
    --  Minimum duration of step pulse
+
+   -----------------
+   -- Soft limits --
+   -----------------
+
+   Tool_Max_Limit_Cartesian : constant Gcode.Step_Position :=
+     (X_Axis => Integer (Step_Per_Millimeter (X_Axis)) * 40,
+      Y_Axis => Integer (Step_Per_Millimeter (Y_Axis)) * 40,
+      Z_Axis => Integer (Step_Per_Millimeter (Z_Axis)) * 40);
+   --  Tool max position in carstesian coordinate
+
+   Tool_Min_Limit_Cartesian : constant Gcode.Step_Position :=
+     (X_Axis => 0,
+      Y_Axis => 0,
+      Z_Axis => 0);
+   --  Tool min position in carstesian coordinate
 
    ------------
    -- Homing --

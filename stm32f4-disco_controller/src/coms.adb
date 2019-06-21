@@ -47,26 +47,22 @@ package body Coms is
    -------------------------------
 
    procedure Initialize_GPIO_Port_Pins is
-      Configuration : GPIO_Port_Configuration;
       Points : constant GPIO_Points := Rx_Pin & Tx_Pin & CTS_Pin;
    begin
       Enable_Clock (Points);
 
-      Configuration.Mode := Mode_AF;
-      Configuration.Speed := Speed_50MHz;
-      Configuration.Output_Type := Push_Pull;
-      Configuration.Resistors := Pull_Up;
-
       Configure_IO
-        (Points, Configuration);
+        (Points, (Mode           => Mode_AF,
+                  Resistors      => Pull_Up,
+                  AF_Output_Type => Push_Pull,
+                  AF_Speed       => Speed_50MHz,
+                  AF             => Transceiver_AF));
 
-      Configure_Alternate_Function
-        (Points, Transceiver_AF);
-
-      --  Manual RTS controll
-      Configuration.Mode := Mode_Out;
-      Configuration.Speed := Speed_50MHz;
-      RTS_Pin.Configure_IO (Configuration);
+      --  Manual RTS control
+      RTS_Pin.Configure_IO ((Mode        => Mode_Out,
+                             Resistors   => Pull_Up,
+                             Output_Type => Push_Pull,
+                             Speed       => Speed_50MHz));
       Ready_To_Receive (False);
    end Initialize_GPIO_Port_Pins;
 
