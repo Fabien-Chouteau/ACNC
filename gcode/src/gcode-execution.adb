@@ -161,7 +161,7 @@ package body Gcode.Execution is
          return;
       end if;
 
-      Planner.Planner_Add_Dwell (Ctx, Duration (Ctx.B ('P').Value));
+      Planner.Planner_Add_Dwell (Ctx, Ctx.B ('P').Value);
    end Dwell_Command;
 
    -------------

@@ -27,7 +27,7 @@ package Gcode is
 
    subtype Float_Value is Float;
    subtype Line_Value is Natural;
-   subtype Frequency_Value is Duration;
+   subtype Frequency_Value is Float;
 
    package Float_Functions is new
      Ada.Numerics.Generic_Elementary_Functions (Float_Value);
@@ -59,6 +59,9 @@ package Gcode is
 
    function Step_To_Milli (S : Step_Position) return Float_Position;
    function Milli_To_Step (S : Float_Position) return Step_Position;
+   function Milli_To_Step (S    : Float_Value;
+                           Axis : Axis_Name)
+                           return Steps;
    function Inch_To_Milli (S : Float_Position) return Float_Position;
    function Inch_To_Milli (S : Float_Value) return Float_Value;
 

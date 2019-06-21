@@ -28,6 +28,22 @@ with Settings; use Settings;
 
 package body Stepper is
 
+   --  Translation to CoreXY limits
+   Stepper_Max_Limit : constant Gcode.Step_Position :=
+     (if Settings.Use_CoreXY_Motion then
+        (X_Axis => Tool_Max_Limit_Cartesian (X_Axis) + Tool_Max_Limit_Cartesian (Y_Axis),
+         Y_Axis => Tool_Max_Limit_Cartesian (X_Axis) - Tool_Min_Limit_Cartesian (Y_Axis),
+         Z_Axis => Tool_Max_Limit_Cartesian (Z_Axis))
+      else
+         Tool_Max_Limit_Cartesian);
+
+   Stepper_Min_Limit : constant Gcode.Step_Position :=
+     (if Settings.Use_CoreXY_Motion then
+        (X_Axis => Tool_Min_Limit_Cartesian (X_Axis) + Tool_Min_Limit_Cartesian (Y_Axis),
+         Y_Axis => Tool_Min_Limit_Cartesian (X_Axis) - Tool_Max_Limit_Cartesian (Y_Axis),
+         Z_Axis => Tool_Min_Limit_Cartesian (Z_Axis))
+      else Tool_Min_Limit_Cartesian);
+
    type Homing_Cycle_State is (Homing_Approach,
                                Homing_Back,
                                Homing_Precision);
@@ -44,6 +60,7 @@ package body Stepper is
 
    procedure Setup_Homing;
    function Homing return Boolean;
+   procedure Reset_To_Home_Coordinates;
 
    type Stepper_Data_Type is record
       Has_Segment : Boolean := False;
@@ -60,8 +77,8 @@ package body Stepper is
       Directions       : Axis_Directions := (others => Forward);
       --  Direction of steps for eaxh axis
 
-      Block_Steps : Step_Position;
-      --  Steps for the current Motion block each axis
+      Abs_Block_Steps : Step_Position;
+      --  Absolute number of steps for the current Motion block each axis
       Block_Event_Count : Steps;
       --  Step count for the current block
 
@@ -214,8 +231,6 @@ package body Stepper is
              Step_Per_Millimeter (St_Data.Homing_Axis)));
 
       St_Data.Homing_State := Homing_Approach;
-
-      St_Data.Directions   := Settings.Homing_Directions;
    end Setup_Homing;
 
    ------------
@@ -224,20 +239,15 @@ package body Stepper is
 
    function Homing return Boolean is
    begin
-      St_Data.Do_Step := (others => False);
-      St_Data.Do_Step (St_Data.Homing_Axis) := True;
-
       case St_Data.Homing_State is
          when Homing_Approach =>
             if St_Data.Home_Test_Callback (St_Data.Homing_Axis) then
                St_Data.Homing_State := Homing_Back;
-               Reverse_Dir (St_Data.Directions (St_Data.Homing_Axis));
             end if;
 
          when Homing_Back =>
             if not St_Data.Home_Test_Callback (St_Data.Homing_Axis) then
                St_Data.Homing_State := Homing_Precision;
-               Reverse_Dir (St_Data.Directions (St_Data.Homing_Axis));
 
                --  Switch to precission feed rate
 
@@ -249,15 +259,17 @@ package body Stepper is
 
          when Homing_Precision =>
             if St_Data.Home_Test_Callback (St_Data.Homing_Axis) then
+
+               --  Reset step instruction
+               St_Data.Do_Step := (others => False);
+
                if
                  St_Data.Homing_Order_Index = Settings.Homing_Order_Range'Last
                then
                   --  End of homing
                   St_Data.Has_Segment := False;
-                  St_Data.Current_Position :=
-                    Milli_To_Step (Settings.Home_Coordinate);
-                  --  Reset step instruction
-                  St_Data.Do_Step := (others => False);
+
+                  Reset_To_Home_Coordinates;
                else
                   --  Start homing cycle for next axis
                   St_Data.Homing_Order_Index := St_Data.Homing_Order_Index + 1;
@@ -265,8 +277,105 @@ package body Stepper is
                end if;
             end if;
       end case;
+
+      --  Compute the next steps/directions for homming
+
+      St_Data.Do_Step := (others => False);
+
+      if Settings.Use_CoreXY_Motion
+        and then
+         St_Data.Homing_Axis /= Z_Axis
+      then
+
+         pragma Warnings (Off, "condition can only be");
+         pragma Warnings (Off, "condition is always");
+         case St_Data.Homing_Axis is
+            when X_Axis =>
+               St_Data.Do_Step (X_Axis) := True;
+               St_Data.Do_Step (Y_Axis) := True;
+
+               if (Settings.Homing_Directions (X_Axis) = Forward
+                   and then
+                   St_Data.Homing_State /= Homing_Back)
+                 or else
+                  (Settings.Homing_Directions (X_Axis) = Backward
+                   and then
+                   St_Data.Homing_State = Homing_Back)
+               then
+                  St_Data.Directions (X_Axis) := Forward;
+                  St_Data.Directions (Y_Axis) := Forward;
+               else
+                  St_Data.Directions (X_Axis) := Backward;
+                  St_Data.Directions (Y_Axis) := Backward;
+               end if;
+
+            when Y_Axis =>
+               St_Data.Do_Step (X_Axis) := True;
+               St_Data.Do_Step (Y_Axis) := True;
+
+               if (Settings.Homing_Directions (Y_Axis) = Forward
+                   and then
+                   St_Data.Homing_State /= Homing_Back)
+                 or else
+                  (Settings.Homing_Directions (Y_Axis) = Backward
+                   and then
+                   St_Data.Homing_State = Homing_Back)
+               then
+                  St_Data.Directions (X_Axis) := Forward;
+                  St_Data.Directions (Y_Axis) := Backward;
+               else
+                  St_Data.Directions (X_Axis) := Backward;
+                  St_Data.Directions (Y_Axis) := Forward;
+               end if;
+
+            when Z_Axis => raise Program_Error; -- Unreachable
+         end case;
+         pragma Warnings (On, "condition can only be");
+         pragma Warnings (On, "condition is always");
+
+      else
+
+         St_Data.Do_Step (St_Data.Homing_Axis) := True;
+
+         St_Data.Directions (St_Data.Homing_Axis) :=
+           Settings.Homing_Directions (St_Data.Homing_Axis);
+
+         if St_Data.Homing_State = Homing_Back then
+            Reverse_Dir (St_Data.Directions (St_Data.Homing_Axis));
+         end if;
+
+      end if;
+
       return True;
    end Homing;
+
+   -------------------------------
+   -- Reset_To_Home_Coordinates --
+   -------------------------------
+
+   procedure Reset_To_Home_Coordinates is
+   begin
+      if Settings.Use_CoreXY_Motion then
+         declare
+            X : constant Steps :=
+              Milli_To_Step (Settings.Home_Coordinate (X_Axis),
+                             X_Axis);
+
+            Y : constant Steps :=
+              Milli_To_Step (Settings.Home_Coordinate (Y_Axis),
+                             Y_Axis);
+         begin
+            St_Data.Current_Position :=
+              (X + Y,
+               X - Y,
+               Milli_To_Step (Settings.Home_Coordinate (Z_Axis),
+                 Z_Axis));
+         end;
+      else
+         St_Data.Current_Position :=
+           Milli_To_Step (Settings.Home_Coordinate);
+      end if;
+   end Reset_To_Home_Coordinates;
 
    ------------------------
    -- Execute_Step_Event --
@@ -286,6 +395,18 @@ package body Stepper is
             else
                St_Data.Current_Position (Axis) :=
                  St_Data.Current_Position (Axis) - 1;
+            end if;
+
+            --  Check soft limits if not in homing
+            if St_Data.Has_Segment and then St_Data.Seg.Kind /= Homing_Segment
+            then
+               if St_Data.Current_Position (Axis) > Stepper_Max_Limit (Axis)
+               then
+                  raise Program_Error;
+               elsif St_Data.Current_Position (Axis) < Stepper_Min_Limit (Axis)
+               then
+                  raise Program_Error;
+               end if;
             end if;
          end if;
       end loop;
@@ -308,7 +429,7 @@ package body Stepper is
 
                when Dwell_Segment =>
                   St_Data.Dwell_Timeout :=
-                    Clock + To_Time_Span (St_Data.Seg.Dwell_Duration);
+                    Clock + To_Time_Span (Duration (St_Data.Seg.Dwell_Duration));
                   St_Data.Set_Stepper_Frequency_Callback
                     (Settings.Dwell_Stepper_Frequency);
                when Motion_Segment =>
@@ -326,7 +447,7 @@ package body Stepper is
 
                      --  Prep data for bresenham algorithm
                      St_Data.Counter := (others => 0);
-                     St_Data.Block_Steps := St_Data.Seg.Block_Steps;
+                     St_Data.Abs_Block_Steps := St_Data.Seg.Abs_Block_Steps;
                      St_Data.Block_Event_Count :=
                        St_Data.Seg.Block_Event_Count;
                   end if;
@@ -356,9 +477,9 @@ package body Stepper is
             --  Bresenham for each axis
             for Axis in Axis_Name loop
 
-               if St_Data.Block_Steps (Axis) /= 0 then
+               if St_Data.Abs_Block_Steps (Axis) /= 0 then
                   St_Data.Counter (Axis) :=
-                    St_Data.Counter (Axis) + St_Data.Block_Steps (Axis);
+                    St_Data.Counter (Axis) + St_Data.Abs_Block_Steps (Axis);
                   if St_Data.Counter (Axis) >= St_Data.Block_Event_Count then
                      St_Data.Do_Step (Axis) := True;
                      St_Data.Counter (Axis) :=
@@ -400,6 +521,8 @@ package body Stepper is
       St_Data.Set_Stepper_Frequency_Callback := Set_Stepper_Frequency;
       St_Data.Home_Test_Callback := Home_Test;
       St_Data.Motor_Enable_Callback := Motor_Enable;
+
+      Reset_To_Home_Coordinates;
    end Set_Stepper_Callbacks;
 
 end Stepper;

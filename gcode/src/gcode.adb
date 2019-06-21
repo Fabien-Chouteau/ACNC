@@ -75,6 +75,18 @@ package body Gcode is
    end Milli_To_Step;
 
    -------------------
+   -- Milli_To_Step --
+   -------------------
+
+   function Milli_To_Step (S    : Float_Value;
+                           Axis : Axis_Name)
+                           return Steps
+   is
+   begin
+      return Steps (S * Settings.Step_Per_Millimeter (Axis));
+   end Milli_To_Step;
+
+   -------------------
    -- Inch_To_Milli --
    -------------------
 
